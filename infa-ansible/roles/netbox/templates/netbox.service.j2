@@ -1,0 +1,12 @@
+[Unit]
+Description=NetBox
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User=root
+WorkingDirectory=/opt/netbox/netbox
+ExecStart=/opt/netbox/venv/bin/python manage.py runserver {{ netbox_listen_address }}:8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

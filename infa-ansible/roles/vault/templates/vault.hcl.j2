@@ -1,0 +1,12 @@
+ui = true
+
+listener "tcp" {
+  address     = "{{ vault_listen_address }}:8200"
+  tls_disable = 1
+}
+
+storage "file" {
+  path = "/opt/vault/data"
+}
+
+api_addr = "http://{{ vault_listen_address }}:8200"

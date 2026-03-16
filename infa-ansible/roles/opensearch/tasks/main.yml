@@ -1,0 +1,245 @@
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+      - openssl
+    state: present
+    update_cache: true
+
+- name: Set vm.max_map_count for OpenSearch (persistent)
+  ansible.builtin.copy:
+    content: "vm.max_map_count=262144\n"
+    dest: /etc/sysctl.d/99-opensearch.conf
+    mode: '0644'
+
+- name: Apply vm.max_map_count now
+  ansible.builtin.command: sysctl -w vm.max_map_count=262144
+  changed_when: true
+
+- name: Add OpenSearch GPG key
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://artifacts.opensearch.org/publickeys/opensearch.pgp | gpg --dearmor -o /usr/share/keyrings/opensearch-keyring.gpg
+    creates: /usr/share/keyrings/opensearch-keyring.gpg
+
+- name: Add OpenSearch repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/opensearch-keyring.gpg] https://artifacts.opensearch.org/releases/bundle/opensearch/2.x/apt stable main"
+    state: present
+
+- name: Install OpenSearch
+  ansible.builtin.shell:
+    cmd: apt-get install -y opensearch
+    creates: /usr/share/opensearch/bin/opensearch
+  environment:
+    OPENSEARCH_INITIAL_ADMIN_PASSWORD: "{{ opensearch_admin_password }}"
+    DISABLE_INSTALL_DEMO_CONFIG: "true"
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Remove unused OpenSearch plugins
+  ansible.builtin.shell:
+    cmd: /usr/share/opensearch/bin/opensearch-plugin remove --purge {{ item }}
+    removes: /usr/share/opensearch/plugins/{{ item }}
+  loop:
+    - opensearch-performance-analyzer
+    - opensearch-skills
+    - opensearch-flow-framework
+    - opensearch-security-analytics
+    - opensearch-neural-search
+    - opensearch-ltr
+    - opensearch-cross-cluster-replication
+    - opensearch-ml
+    - opensearch-knn
+
+- name: Fix ownership on OpenSearch directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: opensearch
+    group: opensearch
+    recurse: true
+  loop:
+    - /var/log/opensearch
+    - /etc/opensearch
+    - /usr/share/opensearch
+
+- name: Create systemd override directory for OpenSearch
+  ansible.builtin.file:
+    path: /etc/systemd/system/opensearch.service.d
+    state: directory
+    mode: '0755'
+
+- name: Increase systemd timeout for OpenSearch
+  ansible.builtin.copy:
+    content: |
+      [Service]
+      TimeoutStartSec=300
+    dest: /etc/systemd/system/opensearch.service.d/timeout.conf
+    mode: '0644'
+  notify: reload systemd
+
+- name: Configure JVM heap size for OpenSearch
+  ansible.builtin.copy:
+    content: |
+      -Xms{{ opensearch_heap_size | default('512m') }}
+      -Xmx{{ opensearch_heap_size | default('512m') }}
+    dest: /etc/opensearch/jvm.options.d/heap.options
+    owner: opensearch
+    group: opensearch
+    mode: '0640'
+
+# ── TLS Certificates ──────────────────────────────────────────────────────────
+
+- name: Create TLS certificate directory
+  ansible.builtin.file:
+    path: /etc/opensearch/certs
+    state: directory
+    owner: opensearch
+    group: opensearch
+    mode: '0750'
+
+- name: Generate CA private key
+  ansible.builtin.shell:
+    cmd: openssl genrsa -out /etc/opensearch/certs/ca.key 2048
+    creates: /etc/opensearch/certs/ca.key
+
+- name: Generate CA certificate
+  ansible.builtin.shell:
+    cmd: >
+      openssl req -new -x509 -sha256
+      -key /etc/opensearch/certs/ca.key
+      -out /etc/opensearch/certs/ca.pem
+      -days 3650
+      -subj "/C=FR/O=OpenSearch/CN=opensearch-ca"
+    creates: /etc/opensearch/certs/ca.pem
+
+- name: Generate node private key
+  ansible.builtin.shell:
+    cmd: openssl genrsa -out /etc/opensearch/certs/node.key 2048
+    creates: /etc/opensearch/certs/node.key
+
+- name: Generate node CSR
+  ansible.builtin.shell:
+    cmd: >
+      openssl req -new -sha256
+      -key /etc/opensearch/certs/node.key
+      -out /etc/opensearch/certs/node.csr
+      -subj "/C=FR/O=OpenSearch/CN={{ opensearch_listen_address }}"
+    creates: /etc/opensearch/certs/node.csr
+
+- name: Sign node certificate with CA
+  ansible.builtin.shell:
+    cmd: >-
+      openssl x509 -req -sha256
+      -in /etc/opensearch/certs/node.csr
+      -CA /etc/opensearch/certs/ca.pem
+      -CAkey /etc/opensearch/certs/ca.key
+      -CAcreateserial
+      -out /etc/opensearch/certs/node.pem
+      -days 3650
+      -extfile <(printf "subjectAltName=IP:{{ opensearch_listen_address }},IP:127.0.0.1")
+    creates: /etc/opensearch/certs/node.pem
+  args:
+    executable: /bin/bash
+
+- name: Generate admin private key
+  ansible.builtin.shell:
+    cmd: openssl genrsa -out /etc/opensearch/certs/admin.key 2048
+    creates: /etc/opensearch/certs/admin.key
+
+- name: Generate admin CSR
+  ansible.builtin.shell:
+    cmd: >
+      openssl req -new -sha256
+      -key /etc/opensearch/certs/admin.key
+      -out /etc/opensearch/certs/admin.csr
+      -subj "/C=FR/O=OpenSearch/CN=admin"
+    creates: /etc/opensearch/certs/admin.csr
+
+- name: Sign admin certificate with CA
+  ansible.builtin.shell:
+    cmd: >
+      openssl x509 -req -sha256
+      -in /etc/opensearch/certs/admin.csr
+      -CA /etc/opensearch/certs/ca.pem
+      -CAkey /etc/opensearch/certs/ca.key
+      -CAcreateserial
+      -out /etc/opensearch/certs/admin.pem
+      -days 3650
+    creates: /etc/opensearch/certs/admin.pem
+
+- name: Fix ownership on certificate directory
+  ansible.builtin.file:
+    path: /etc/opensearch/certs
+    state: directory
+    owner: opensearch
+    group: opensearch
+    recurse: true
+
+# ── Security config (avant démarrage) ────────────────────────────────────────
+
+- name: Generate bcrypt hash for admin password
+  ansible.builtin.shell:
+    cmd: >
+      /usr/share/opensearch/plugins/opensearch-security/tools/hash.sh
+      -p "{{ opensearch_admin_password }}"
+  environment:
+    JAVA_HOME: /usr/share/opensearch/jdk
+  register: opensearch_admin_hash
+  changed_when: false
+  no_log: true
+
+- name: Create security config directory
+  ansible.builtin.file:
+    path: /etc/opensearch/opensearch-security
+    state: directory
+    owner: opensearch
+    group: opensearch
+    mode: '0750'
+
+- name: Deploy security config files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: /etc/opensearch/opensearch-security/
+    owner: opensearch
+    group: opensearch
+    mode: '0640'
+  loop:
+    - config.yml
+    - roles.yml
+    - roles_mapping.yml
+    - action_groups.yml
+    - tenants.yml
+
+- name: Deploy internal_users.yml with hashed password
+  ansible.builtin.template:
+    src: internal_users.yml.j2
+    dest: /etc/opensearch/opensearch-security/internal_users.yml
+    owner: opensearch
+    group: opensearch
+    mode: '0640'
+
+# ── Configuration & démarrage ─────────────────────────────────────────────────
+
+- name: Deploy OpenSearch configuration
+  ansible.builtin.template:
+    src: opensearch.yml.j2
+    dest: /etc/opensearch/opensearch.yml
+    owner: opensearch
+    group: opensearch
+    mode: '0640'
+  notify: restart opensearch
+
+- name: Enable and start OpenSearch
+  ansible.builtin.systemd:
+    name: opensearch
+    enabled: true
+    state: started
+
+- name: Wait for OpenSearch to be ready
+  ansible.builtin.wait_for:
+    host: "{{ opensearch_listen_address }}"
+    port: 9200
+    delay: 10
+    timeout: 180
+    state: started

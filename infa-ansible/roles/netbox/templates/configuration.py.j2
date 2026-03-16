@@ -1,0 +1,25 @@
+ALLOWED_HOSTS = ['{{ netbox_listen_address }}', 'localhost']
+
+DATABASE = {
+    'NAME': 'netbox',
+    'USER': 'netbox',
+    'PASSWORD': '{{ netbox_db_password }}',
+    'HOST': 'localhost',
+    'PORT': '',
+    'CONN_MAX_AGE': 300,
+}
+
+REDIS = {
+    'tasks': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'SSL': False,
+    },
+    'caching': {
+        'HOST': 'localhost',
+        'PORT': 6379,
+        'SSL': False,
+    }
+}
+
+SECRET_KEY = '{{ netbox_secret_key }}'

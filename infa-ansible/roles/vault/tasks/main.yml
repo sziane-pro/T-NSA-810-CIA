@@ -1,0 +1,40 @@
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - gpg
+      - curl
+    state: present
+    update_cache: true
+
+- name: Add HashiCorp GPG key
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    creates: /usr/share/keyrings/hashicorp-archive-keyring.gpg
+
+- name: Add HashiCorp repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+
+- name: Install Vault
+  ansible.builtin.apt:
+    name: vault
+    state: present
+    update_cache: true
+
+- name: Deploy Vault configuration
+  ansible.builtin.template:
+    src: vault.hcl.j2
+    dest: /etc/vault.d/vault.hcl
+    owner: vault
+    group: vault
+    mode: '0640'
+  notify: restart vault
+
+- name: Enable and start Vault
+  ansible.builtin.systemd:
+    name: vault
+    enabled: true
+    state: started
+
+- import_tasks: init.yml
