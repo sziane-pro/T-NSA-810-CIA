@@ -1,0 +1,8 @@
+- import_tasks: vlans.yml
+  tags: vlans
+
+- import_tasks: interfaces.yml
+  tags: interfaces
+
+- import_tasks: rules.yml
+  tags: rules

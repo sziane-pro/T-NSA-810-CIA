@@ -1,0 +1,9 @@
+opensearch_listen_address: 192.168.10.101
+opensearch_admin_password: "OpenSearchNsaVm1!"
+opensearch_heap_size: "512m"
+
+netbox_listen_address: 192.168.10.101
+netbox_version: "v4.1.0"
+netbox_db_password: "NetBoxDb124!"
+netbox_admin_password: "NetBoxAdminAccess124!"
+netbox_secret_key: "fqfqff45-fqr5f5-key-er5f1er5f8-50-erf1erf5512d-long-zef5484zfzf2@"

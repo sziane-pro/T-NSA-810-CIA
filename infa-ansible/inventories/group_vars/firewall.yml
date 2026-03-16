@@ -1,0 +1,8 @@
+wan_interface: vtnet0
+trunk_interface: vtnet1
+
+Lan_vlan: 10
+admin_vlan: 30
+
+lan_ip: 192.168.10.1
+admin_ip: 192.168.30.1

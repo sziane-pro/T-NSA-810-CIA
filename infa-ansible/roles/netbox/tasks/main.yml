@@ -1,0 +1,97 @@
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - postgresql
+      - redis-server
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      - git
+      - curl
+      - libpq-dev
+      - gcc
+    state: present
+    update_cache: true
+
+- name: Start PostgreSQL and Redis
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - postgresql
+    - redis-server
+
+- name: Wait for PostgreSQL to be ready
+  ansible.builtin.wait_for:
+    path: /var/run/postgresql/.s.PGSQL.5432
+    timeout: 30
+
+- name: Install psycopg2 for Ansible PostgreSQL modules
+  ansible.builtin.apt:
+    name: python3-psycopg2
+    state: present
+
+- name: Create NetBox database user
+  community.postgresql.postgresql_user:
+    name: netbox
+    password: "{{ netbox_db_password }}"
+    state: present
+  become_user: postgres
+
+- name: Create NetBox database
+  community.postgresql.postgresql_db:
+    name: netbox
+    owner: netbox
+    state: present
+  become_user: postgres
+
+- name: Download NetBox
+  ansible.builtin.git:
+    repo: https://github.com/netbox-community/netbox.git
+    dest: /opt/netbox
+    version: "{{ netbox_version }}"
+    depth: 1
+
+- name: Create NetBox virtualenv and install dependencies
+  ansible.builtin.pip:
+    requirements: /opt/netbox/requirements.txt
+    virtualenv: /opt/netbox/venv
+    virtualenv_command: python3 -m venv
+
+- name: Deploy NetBox configuration
+  ansible.builtin.template:
+    src: configuration.py.j2
+    dest: /opt/netbox/netbox/netbox/configuration.py
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Run NetBox migrations
+  ansible.builtin.shell: |
+    source /opt/netbox/venv/bin/activate
+    python /opt/netbox/netbox/manage.py migrate
+  args:
+    executable: /bin/bash
+
+- name: Create NetBox superuser
+  ansible.builtin.shell: |
+    source /opt/netbox/venv/bin/activate
+    echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', '{{ netbox_admin_password }}')" | python /opt/netbox/netbox/manage.py shell
+  args:
+    executable: /bin/bash
+
+- name: Deploy NetBox systemd service
+  ansible.builtin.template:
+    src: netbox.service.j2
+    dest: /etc/systemd/system/netbox.service
+    mode: '0644'
+  notify: restart netbox
+
+- name: Enable and start NetBox
+  ansible.builtin.systemd:
+    name: netbox
+    enabled: true
+    state: started
+    daemon_reload: true

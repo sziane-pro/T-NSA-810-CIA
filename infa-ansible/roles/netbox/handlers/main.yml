@@ -1,0 +1,4 @@
+- name: restart netbox
+  ansible.builtin.systemd:
+    name: netbox
+    state: restarted

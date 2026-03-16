@@ -1,0 +1,159 @@
+# Règles WAN
+
+- name: Allow HTTPS to firewall from 163.5.3.84
+  pfsensible.core.pfsense_rule:
+    name: "Allow HTTPS firewall 163.5.3.84"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "163.5.3.84"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name: Allow SSH to firewall from 163.5.3.84
+  pfsensible.core.pfsense_rule:
+    name: "Allow SSH firewall 163.5.3.84"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "163.5.3.84"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
+- name: Pc Jojo to Vm1 SSH
+  pfsensible.core.pfsense_rule:
+    name: "Pc Jojo => Vm1"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "163.5.3.84"
+    destination: "192.168.10.101"
+    destination_port: "22"
+    state: present
+
+- name: NAT SSH to 192.168.10.101
+  pfsensible.core.pfsense_rule:
+    name: "NAT LAN Vm1"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: any
+    destination: "192.168.10.101"
+    destination_port: "22"
+    state: present
+
+- name: Reseau Epitech to Vm1 SSH
+  pfsensible.core.pfsense_rule:
+    name: "Reseau Epitech => Vm1"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "163.5.3.84"
+    destination: "192.168.30.101"
+    destination_port: "22"
+    state: present
+
+- name: NAT SSH to 192.168.30.101
+  pfsensible.core.pfsense_rule:
+    name: "NAT ADMIN Vm2"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: any
+    destination: "192.168.30.101"
+    destination_port: "22"
+    state: present
+
+- name: Chez Jaures HTTPS to firewall
+  pfsensible.core.pfsense_rule:
+    name: "Chez Jaures HTTPS"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "94.238.238.44"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name: Chez Jaures SSH to firewall
+  pfsensible.core.pfsense_rule:
+    name: "Chez Jaures SSH firewall"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "94.238.238.44"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
+- name: Reseau Jaures to Vm1 SSH
+  pfsensible.core.pfsense_rule:
+    name: "Réseau Jaures => Vm1"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "94.238.238.44"
+    destination: "192.168.10.101"
+    destination_port: "22"
+    state: present
+
+- name: Reseau Jaures to Vm2 SSH
+  pfsensible.core.pfsense_rule:
+    name: "Réseau Jaures => Vm2"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "94.238.238.44"
+    destination: "192.168.30.101"
+    destination_port: "22"
+    state: present
+
+# Règles inter-VLAN : Admin VM => LAN VM
+
+- name: Admin VM to LAN VM SSH
+  pfsensible.core.pfsense_rule:
+    name: "Admin => LAN SSH"
+    action: pass
+    interface: admin
+    ipprotocol: inet
+    protocol: tcp
+    source: "192.168.30.101"
+    destination: "192.168.10.101"
+    destination_port: "22"
+    state: present
+
+- name: Admin VM to LAN VM OpenSearch
+  pfsensible.core.pfsense_rule:
+    name: "Admin => LAN OpenSearch"
+    action: pass
+    interface: admin
+    ipprotocol: inet
+    protocol: tcp
+    source: "192.168.30.101"
+    destination: "192.168.10.101"
+    destination_port: "9200"
+    state: present
+
+- name: Admin VM to LAN VM NetBox
+  pfsensible.core.pfsense_rule:
+    name: "Admin => LAN NetBox"
+    action: pass
+    interface: admin
+    ipprotocol: inet
+    protocol: tcp
+    source: "192.168.30.101"
+    destination: "192.168.10.101"
+    destination_port: "8080"
+    state: present
