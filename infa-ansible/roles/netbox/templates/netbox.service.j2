@@ -1,11 +1,15 @@
 [Unit]
-Description=NetBox
+Description=NetBox (Gunicorn)
 After=network.target postgresql.service redis-server.service
 
 [Service]
 User=root
 WorkingDirectory=/opt/netbox/netbox
-ExecStart=/opt/netbox/venv/bin/python manage.py runserver {{ netbox_listen_address }}:8080
+ExecStart=/opt/netbox/venv/bin/gunicorn \
+    --workers 2 \
+    --bind 127.0.0.1:8081 \
+    netbox.wsgi
+
 Restart=always
 
 [Install]

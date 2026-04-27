@@ -95,3 +95,64 @@
     enabled: true
     state: started
     daemon_reload: true
+
+- name: Install Nginx and Gunicorn
+  ansible.builtin.apt:
+    name: 
+      - nginx
+    state: present
+
+- name: Install Gunicorn in virtualenv
+  ansible.builtin.pip:
+    name: gunicorn
+    virtualenv: /opt/netbox/venv
+
+- name: Collect static files
+  ansible.builtin.shell: |
+    source /opt/netbox/venv/bin/activate
+    python /opt/netbox/netbox/manage.py collectstatic --noinput
+  args: 
+    executable: /bin/bash
+
+- name: Create SSL directory
+  ansible.builtin.file:
+    path: /etc/ssl/netbox
+    state: directory
+    mode: '0755'
+
+- name: Generate self-signed TLS certificate
+  ansible.builtin.command: >
+    openssl req -x509 -nodes -days 365
+    -newkey rsa:2048
+    -keyout /etc/ssl/netbox/netbox.key
+    -out /etc/ssl/netbox/netbox.crt
+    -subj "/CN={{ netbox_listen_address }}/O=NetBox/C=FR"
+  args: 
+    creates: /etc/ssl/netbox/netbox.crt 
+
+- name: Deploy Nginx config
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/netbox
+    mode: '0644'
+  notify: restart nginx
+
+- name: Enable Nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/netbox
+    dest: /etc/nginx/sites-enabled/netbox
+    state: link
+  notify: restart nginx
+
+- name: Remove default Nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: restart nginx
+
+- name: Enable and start Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+    daemon_reload: true
