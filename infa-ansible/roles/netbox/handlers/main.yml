@@ -2,3 +2,8 @@
   ansible.builtin.systemd:
     name: netbox
     state: restarted
+
+- name: restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
