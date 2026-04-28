@@ -1,0 +1,96 @@
+# --- Import PKI dans pfSense ---
+
+- name: Import CA into pfSense
+  pfsensible.core.pfsense_ca:
+    name: "VPN-CA"
+    method: existing
+    certificate: "{{ lookup('file', playbook_dir + '/../pki/ca.crt') | b64encode }}"
+    state: present
+
+- name: Import server certificate into pfSense
+  pfsensible.core.pfsense_cert:
+    name: "vpn-server-site1"
+    ca: "VPN-CA"
+    method: import
+    certificate: "{{ lookup('file', playbook_dir + '/../pki/vpn-server.crt') | b64encode }}"
+    key: "{{ lookup('file', playbook_dir + '/../pki/vpn-server.key') | b64encode }}"
+    state: present
+
+# --- Configuration serveur OpenVPN ---
+
+- name: Configure OpenVPN server Site 1
+  pfsensible.core.pfsense_openvpn_server:
+    name: "VPN-Site1"
+    mode: "p2p_tls"
+    interface: "WAN"
+    protocol: "UDP4"
+    local_port: 1194
+    tunnel_network: "{{ vpn_tunnel_network }}"
+    local_network: "{{ lan_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24,{{ admin_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24"
+    ca: "VPN-CA"
+    cert: "vpn-server-site1"
+    data_ciphers: "AES-256-GCM"
+    data_ciphers_fallback: "AES-256-GCM"
+    state: present
+
+# --- Règles firewall VPN ---
+
+- name: Allow OpenVPN on WAN (UDP 1194)
+  pfsensible.core.pfsense_rule:
+    name: "Allow OpenVPN WAN"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: udp
+    source: any
+    destination: "(self)"
+    destination_port: "1194"
+    state: present
+
+- name: Allow traffic from Site 2 via VPN tunnel
+  pfsensible.core.pfsense_rule:
+    name: "VPN Site2 to Site1"
+    action: pass
+    interface: openvpn
+    ipprotocol: inet
+    protocol: any
+    source: "{{ vpn_site2_lan }}"
+    destination: any
+    state: present
+
+- name: Allow traffic from Site 2 admin via VPN tunnel
+  pfsensible.core.pfsense_rule:
+    name: "VPN Site2 Admin to Site1"
+    action: pass
+    interface: openvpn
+    ipprotocol: inet
+    protocol: any
+    source: "{{ vpn_site2_admin }}"
+    destination: any
+    state: present
+
+# --- Kill Switch ---
+# Bloque tout trafic vers Site 2 qui ne passerait pas par le tunnel VPN
+# Si le tunnel est down, le trafic est droppé au lieu de fuiter par le WAN
+
+- name: Kill Switch - Block Site 2 LAN via WAN
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH Site2 LAN"
+    action: block
+    interface: WAN
+    ipprotocol: inet
+    protocol: any
+    source: any
+    destination: "{{ vpn_site2_lan }}"
+    state: present
+
+- name: Kill Switch - Block Site 2 Admin via WAN
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH Site2 Admin"
+    action: block
+    interface: WAN
+    ipprotocol: inet
+    protocol: any
+    source: any
+    destination: "{{ vpn_site2_admin }}"
+    state: present
