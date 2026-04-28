@@ -1,0 +1,130 @@
+- name: Install EasyRSA
+  ansible.builtin.apt:
+    name: easy-rsa
+    state: present
+    update_cache: true
+
+- name: Create EasyRSA working directory
+  ansible.builtin.file:
+    path: /opt/easy-rsa
+    state: directory
+    mode: '0700'
+
+- name: Init PKI
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa init-pki
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Build CA
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa build-ca nopass
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/ca.crt
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Generate server certificate request
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-server nopass
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/private/vpn-server.key
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Sign server certificate
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req server vpn-server
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/issued/vpn-server.crt
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Generate client certificate request for Site 2
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-client-site2 nopass
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/private/vpn-client-site2.key
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Sign client certificate for Site 2
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req client vpn-client-site2
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/issued/vpn-client-site2.crt
+  environment:
+    EASYRSA_BATCH: "1"
+
+- name: Generate Diffie-Hellman parameters
+  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-dh
+  args:
+    chdir: /opt/easy-rsa
+    creates: /opt/easy-rsa/pki/dh.pem
+  environment:
+    EASYRSA_BATCH: "1"
+
+# Extraction PEM pur (les fichiers EasyRSA contiennent du texte lisible en plus)
+- name: Extract clean PEM from CA certificate
+  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/ca.crt > /opt/easy-rsa/pki/ca-clean.crt
+  args:
+    creates: /opt/easy-rsa/pki/ca-clean.crt
+
+- name: Extract clean PEM from server certificate
+  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-server.crt > /opt/easy-rsa/pki/issued/vpn-server-clean.crt
+  args:
+    creates: /opt/easy-rsa/pki/issued/vpn-server-clean.crt
+
+- name: Extract clean PEM from client certificate
+  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-client-site2.crt > /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
+  args:
+    creates: /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
+
+- name: Fetch CA certificate to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/ca-clean.crt
+    dest: "{{ playbook_dir }}/../pki/ca.crt"
+    flat: true
+
+- name: Fetch server certificate to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/issued/vpn-server-clean.crt
+    dest: "{{ playbook_dir }}/../pki/vpn-server.crt"
+    flat: true
+
+- name: Fetch server private key to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/private/vpn-server.key
+    dest: "{{ playbook_dir }}/../pki/vpn-server.key"
+    flat: true
+
+- name: Fetch client certificate to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
+    dest: "{{ playbook_dir }}/../pki/vpn-client-site2.crt"
+    flat: true
+
+- name: Fetch client private key to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/private/vpn-client-site2.key
+    dest: "{{ playbook_dir }}/../pki/vpn-client-site2.key"
+    flat: true
+
+- name: Fetch DH parameters to controller
+  ansible.builtin.fetch:
+    src: /opt/easy-rsa/pki/dh.pem
+    dest: "{{ playbook_dir }}/../pki/dh.pem"
+    flat: true
+
+# Sécurité : supprimer les clés privées de la VM après récupération
+- name: Remove CA private key from VM
+  ansible.builtin.file:
+    path: /opt/easy-rsa/pki/private/ca.key
+    state: absent
+
+- name: Remove server private key from VM
+  ansible.builtin.file:
+    path: /opt/easy-rsa/pki/private/vpn-server.key
+    state: absent

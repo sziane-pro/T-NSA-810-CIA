@@ -6,3 +6,6 @@
 
 - import_tasks: rules.yml
   tags: rules
+
+- import_tasks: vpn.yml
+  tags: vpn

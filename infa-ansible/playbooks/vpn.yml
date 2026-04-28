@@ -1,0 +1,14 @@
+---
+# Play 1 : Génère la PKI sur admin_vm
+- name: Generate PKI on admin_vm
+  hosts: admin_vm
+  become: true
+  roles:
+    - pki
+
+# Play 2 : Configure OpenVPN + Kill Switch sur pfSense
+- name: Configure OpenVPN server on pfSense
+  hosts: firewall
+  roles:
+    - role: pfsense_network
+      tasks_from: vpn
