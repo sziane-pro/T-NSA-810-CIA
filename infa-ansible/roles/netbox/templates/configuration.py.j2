@@ -1,5 +1,11 @@
 ALLOWED_HOSTS = ['{{ netbox_listen_address }}', 'localhost']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://{{ netbox_listen_address }}',
+    'https://localhost:8443',
+    'http://localhost:8443',
+]
+
 DATABASE = {
     'NAME': 'netbox',
     'USER': 'netbox',
