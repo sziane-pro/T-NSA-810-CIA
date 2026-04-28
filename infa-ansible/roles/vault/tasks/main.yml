@@ -22,6 +22,34 @@
     state: present
     update_cache: true
 
+- name: Create TLS directory
+  ansible.builtin.file:
+    path: /opt/vault/tls
+    state: directory
+    owner: vault
+    group: vault
+    mode: '0750'
+
+- name: Generate self-signed TLS certificate for Vault
+  ansible.builtin.command:
+    cmd: >
+      openssl req -x509 -nodes -days 365 -newkey rsa:2048
+      -keyout /opt/vault/tls/vault.key
+      -out /opt/vault/tls/vault.crt
+      -subj "/CN={{ vault_listen_address }}"
+      -addext "subjectAltName=IP:{{ vault_listen_address }}"
+    creates: /opt/vault/tls/vault.crt
+
+- name: Set TLS files ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: vault
+    group: vault
+    mode: '0640'
+  loop:
+    - /opt/vault/tls/vault.crt
+    - /opt/vault/tls/vault.key
+
 - name: Deploy Vault configuration
   ansible.builtin.template:
     src: vault.hcl.j2
