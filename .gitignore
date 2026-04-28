@@ -4,3 +4,5 @@ infa-ansible/pki/
 
 # Secrets locaux - ne jamais commiter
 infa-ansible/.env
+*.tar.gz
+*.snap
