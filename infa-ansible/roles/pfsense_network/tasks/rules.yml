@@ -1,25 +1,25 @@
 # Règles WAN
 
-- name: Allow HTTPS to firewall from 163.5.3.84
+- name: Allow HTTPS to firewall from Epitech
   pfsensible.core.pfsense_rule:
     name: "Allow HTTPS firewall 163.5.3.84"
     action: pass
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "163.5.3.84"
+    source: "{{ epitech_network_ip }}"
     destination: "(self)"
     destination_port: "443"
     state: present
 
-- name: Allow SSH to firewall from 163.5.3.84
+- name: Allow SSH to firewall from Epitech
   pfsensible.core.pfsense_rule:
     name: "Allow SSH firewall 163.5.3.84"
     action: pass
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "163.5.3.84"
+    source: "{{ epitech_network_ip }}"
     destination: "(self)"
     destination_port: "22"
     state: present
@@ -31,12 +31,12 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "163.5.3.84"
-    destination: "192.168.10.101"
+    source: "{{ epitech_network_ip }}"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "22"
     state: present
 
-- name: NAT SSH to 192.168.10.101
+- name: NAT SSH to lan_vm
   pfsensible.core.pfsense_rule:
     name: "NAT LAN Vm1"
     action: pass
@@ -44,23 +44,23 @@
     ipprotocol: inet
     protocol: tcp
     source: any
-    destination: "192.168.10.101"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "22"
     state: present
 
-- name: Reseau Epitech to Vm1 SSH
+- name: Reseau Epitech to admin_vm SSH
   pfsensible.core.pfsense_rule:
     name: "Reseau Epitech => Vm1"
     action: pass
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "163.5.3.84"
-    destination: "192.168.30.101"
+    source: "{{ epitech_network_ip }}"
+    destination: "{{ admin_vm_ip }}"
     destination_port: "22"
     state: present
 
-- name: NAT SSH to 192.168.30.101
+- name: NAT SSH to admin_vm
   pfsensible.core.pfsense_rule:
     name: "NAT ADMIN Vm2"
     action: pass
@@ -68,7 +68,7 @@
     ipprotocol: inet
     protocol: tcp
     source: any
-    destination: "192.168.30.101"
+    destination: "{{ admin_vm_ip }}"
     destination_port: "22"
     state: present
 
@@ -79,7 +79,7 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "94.238.238.44"
+    source: "{{ jaures_network_ip }}"
     destination: "(self)"
     destination_port: "443"
     state: present
@@ -91,7 +91,7 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "94.238.238.44"
+    source: "{{ jaures_network_ip }}"
     destination: "(self)"
     destination_port: "22"
     state: present
@@ -103,8 +103,8 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "94.238.238.44"
-    destination: "192.168.10.101"
+    source: "{{ jaures_network_ip }}"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "22"
     state: present
 
@@ -115,8 +115,8 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: "94.238.238.44"
-    destination: "192.168.30.101"
+    source: "{{ jaures_network_ip }}"
+    destination: "{{ admin_vm_ip }}"
     destination_port: "22"
     state: present
 
@@ -129,8 +129,8 @@
     interface: admin
     ipprotocol: inet
     protocol: tcp
-    source: "192.168.30.101"
-    destination: "192.168.10.101"
+    source: "{{ admin_vm_ip }}"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "22"
     state: present
 
@@ -141,8 +141,8 @@
     interface: admin
     ipprotocol: inet
     protocol: tcp
-    source: "192.168.30.101"
-    destination: "192.168.10.101"
+    source: "{{ admin_vm_ip }}"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "9200"
     state: present
 
@@ -153,7 +153,7 @@
     interface: admin
     ipprotocol: inet
     protocol: tcp
-    source: "192.168.30.101"
-    destination: "192.168.10.101"
+    source: "{{ admin_vm_ip }}"
+    destination: "{{ lan_vm_ip }}"
     destination_port: "443"
     state: present
