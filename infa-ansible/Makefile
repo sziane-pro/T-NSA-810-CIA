@@ -11,6 +11,8 @@ SITE2_INVENTORY := inventories/site2
 
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
+        site1-netbox-token site1-netbox-populate \
+        tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ping
 
 help:
@@ -25,12 +27,20 @@ help:
 	@echo "  make site1-vault         - Installe Vault sur admin_vm Site 1"
 	@echo "  make site1-lan           - Installe OpenSearch + NetBox sur lan_vm Site 1"
 	@echo "  make site1-vpn           - Genere PKI + configure OpenVPN Site 1"
-	@echo "  make site1-pki           - Genere la PKI Site 1 uniquement"
+	@echo "  make site1-pki            - Genere la PKI Site 1 uniquement"
+	@echo "  make site1-netbox-token   - Genere le token API NetBox et le stocke dans Vault"
+	@echo "  make site1-netbox-populate - Peuple NetBox avec l'infrastructure Site 1"
+	@echo ""
+	@echo "  --- Tunnels SSH ---"
+	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
+	@echo "  make tunnel-vault        - Tunnel vers Vault      (localhost:8200)"
+	@echo "  make tunnel-opensearch   - Tunnel vers OpenSearch (localhost:9200)"
+	@echo "  make tunnel-all          - Tous les tunnels en une commande"
 	@echo ""
 	@echo "  make ping                - Teste la connectivite vers tous les hotes"
 
 install:
-	ansible-galaxy collection install -r requirements.yml
+	ansible-galaxy collection install -r requirements.yml --upgrade
 	python3 -m pip install -r requirements.txt --break-system-packages
 
 # --- Site 1 ---
@@ -49,19 +59,41 @@ site1-vault:
 
 site1-lan:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
-		-L 8200:192.168.30.101:8200 \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass; \
-	pkill -f "8200:192.168.30.101:8200" 2>/dev/null || true
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vpn:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
 
 site1-pki:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass --tags pki
+
+site1-netbox-token:
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
+	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
+
+site1-netbox-populate:
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_populate.yml; \
+	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 # --- Site 2 ---
 # Les cibles Site 2 sont a implementer par l'equipe Site 2.
@@ -81,6 +113,40 @@ site1-pki:
 # 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass
 
 # --- Global ---
+
+tunnel-netbox:
+	@echo "Tunnel NetBox : https://localhost:8443 -> $(NETBOX_INTERNAL_HOST):443  (Ctrl+C pour fermer)"
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
+		-o StrictHostKeyChecking=no \
+		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
+
+tunnel-vault:
+	@echo "Tunnel Vault : https://localhost:8200 -> $(VAULT_INTERNAL_HOST):8200  (Ctrl+C pour fermer)"
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o StrictHostKeyChecking=no \
+		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
+
+tunnel-opensearch:
+	@echo "Tunnel OpenSearch : https://localhost:9200 -> $(NETBOX_INTERNAL_HOST):9200  (Ctrl+C pour fermer)"
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 9200:$(NETBOX_INTERNAL_HOST):9200 \
+		-o StrictHostKeyChecking=no \
+		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
+
+tunnel-all:
+	@echo "Tunnels ouverts :"
+	@echo "  https://localhost:8443  -> NetBox     ($(NETBOX_INTERNAL_HOST):443)"
+	@echo "  https://localhost:8200  -> Vault      ($(VAULT_INTERNAL_HOST):8200)"
+	@echo "  https://localhost:9200  -> OpenSearch ($(NETBOX_INTERNAL_HOST):9200)"
+	@echo "Ctrl+C pour tout fermer."
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-L 9200:$(NETBOX_INTERNAL_HOST):9200 \
+		-o StrictHostKeyChecking=no \
+		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
 
 ping:
 	ansible all -i $(SITE1_INVENTORY) -m ping

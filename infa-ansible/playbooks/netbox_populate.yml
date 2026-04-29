@@ -1,0 +1,236 @@
+# Peuple NetBox avec l'infrastructure de Site 1.
+# Pré-requis : tunnels SSH ouverts (8200 -> Vault, 8443 -> NetBox)
+# Exécuter via : make site1-netbox-populate
+- name: Populate NetBox with Site 1 infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    netbox_url: "https://localhost:8443"
+    netbox_token: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:api_token',
+                      url=lookup('env', 'VAULT_ADDR'),
+                      token=lookup('env', 'VAULT_TOKEN'),
+                      validate_certs=false) }}"
+    netbox_validate_certs: false
+
+  tasks:
+    # Site                                                                 
+    - name: Create site
+      netbox.netbox.netbox_site:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "Site 1"
+          slug: "site-1"
+          status: active
+        state: present
+
+    # Prefixes IP                                                          
+    - name: Create IP prefixes
+      netbox.netbox.netbox_prefix:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          prefix: "{{ item.prefix }}"
+          site: "Site 1"
+          description: "{{ item.description }}"
+          status: active
+        state: present
+      loop:
+        - { prefix: "192.168.10.0/24", description: "LAN VLAN10" }
+        - { prefix: "192.168.30.0/24", description: "ADMIN VLAN30" }
+        - { prefix: "10.0.0.0/30",     description: "VPN Tunnel Site-a-Site" }
+
+    # Cluster de virtualisation                                            
+    - name: Create cluster type
+      netbox.netbox.netbox_cluster_type:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "KVM"
+          slug: "kvm"
+        state: present
+
+    - name: Create cluster
+      netbox.netbox.netbox_cluster:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "Site1-Cluster"
+          cluster_type: "KVM"
+          site: "Site 1"
+        state: present
+
+    # Machines virtuelles                                                  
+    - name: Create virtual machines
+      netbox.netbox.netbox_virtual_machine:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "{{ item.name }}"
+          cluster: "Site1-Cluster"
+          site: "Site 1"
+          status: active
+          comments: "{{ item.comments }}"
+        state: present
+      loop:
+        - { name: "lan_vm",   comments: "Héberge NetBox (IPAM) et OpenSearch (logs)" }
+        - { name: "admin_vm", comments: "Héberge HashiCorp Vault (secrets)" }
+
+    # Interfaces réseau des VMs                                            
+    - name: Create VM interfaces
+      netbox.netbox.netbox_vm_interface:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          virtual_machine: "{{ item.vm }}"
+          name: "eth0"
+        state: present
+      loop:
+        - { vm: "lan_vm" }
+        - { vm: "admin_vm" }
+
+    # Adresses IP                                                          
+    - name: Create IP addresses and assign to interfaces
+      netbox.netbox.netbox_ip_address:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          address: "{{ item.address }}"
+          assigned_object:
+            virtual_machine: "{{ item.vm }}"
+            name: "eth0"
+          status: active
+          description: "{{ item.description }}"
+        state: present
+      loop:
+        - { address: "192.168.10.101/24", vm: "lan_vm",   description: "LAN ip — lan_vm" }
+        - { address: "192.168.30.101/24", vm: "admin_vm", description: "ADMIN ip — admin_vm" }
+
+    # pfSense Site 1 (device)                                              
+    - name: Create manufacturer
+      netbox.netbox.netbox_manufacturer:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "Netgate"
+          slug: "netgate"
+        state: present
+
+    - name: Create device type
+      netbox.netbox.netbox_device_type:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          model: "pfSense"
+          slug: "pfsense"
+          manufacturer: "Netgate"
+        state: present
+
+    - name: Create device role
+      netbox.netbox.netbox_device_role:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "Firewall"
+          slug: "firewall"
+          color: "f44336"
+        state: present
+
+    - name: Create pfSense device
+      netbox.netbox.netbox_device:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "pfsense-site1"
+          device_type: "pfSense"
+          device_role: "Firewall"
+          site: "Site 1"
+          status: active
+          comments: "Firewall pfSense Site 1 — VLANs LAN/ADMIN + VPN site-à-site"
+        state: present
+
+    - name: Create pfSense interfaces
+      netbox.netbox.netbox_device_interface:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          device: "pfsense-site1"
+          name: "{{ item.name }}"
+          type: "virtual"
+          description: "{{ item.description }}"
+        state: present
+      loop:
+        - { name: "vtnet0",    description: "WAN" }
+        - { name: "vtnet1.10", description: "LAN VLAN10" }
+        - { name: "vtnet1.30", description: "ADMIN VLAN30" }
+        - { name: "ovpns1",    description: "OpenVPN tunnel Site-to-Site" }
+
+    - name: Assign IPs to pfSense interfaces
+      netbox.netbox.netbox_ip_address:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          address: "{{ item.address }}"
+          assigned_object:
+            device: "pfsense-site1"
+            name: "{{ item.iface }}"
+          status: active
+          description: "{{ item.description }}"
+        state: present
+      loop:
+        - { address: "192.168.10.1/24", iface: "vtnet1.10", description: "Gateway LAN VLAN10" }
+        - { address: "192.168.30.1/24", iface: "vtnet1.30", description: "Gateway ADMIN VLAN30" }
+        - { address: "10.0.0.1/30",     iface: "ovpns1",    description: "Tunnel OpenVPN — côté Site 1" }
+
+    # Services applicatifs                                                 
+    - name: Create services on VMs
+      netbox.netbox.netbox_service:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          virtual_machine: "{{ item.vm }}"
+          name: "{{ item.name }}"
+          ports:
+            - "{{ item.port }}"
+          protocol: tcp
+          description: "{{ item.description }}"
+        state: present
+      loop:
+        - { vm: "lan_vm",   name: "netbox",     port: 443,  description: "NetBox IPAM/DCIM (HTTPS)" }
+        - { vm: "lan_vm",   name: "opensearch", port: 9200, description: "OpenSearch REST API" }
+        - { vm: "admin_vm", name: "vault",      port: 8200, description: "HashiCorp Vault (HTTPS)" }
+
+    # Tunnel VPN Site-to-Site                                              
+    - name: Create VPN tunnel
+      netbox.netbox.netbox_tunnel:
+        netbox_url: "{{ netbox_url }}"
+        netbox_token: "{{ netbox_token }}"
+        validate_certs: "{{ netbox_validate_certs }}"
+        data:
+          name: "VPN-Site1-Site2"
+          status: active
+          encapsulation: gre
+          description: "OpenVPN site-à-site | réseau 10.0.0.0/30 | Site1: 10.0.0.1 (pfsense-site1:ovpns1) | Site2: 10.0.0.2 (pfsense-site2:ovpns1)"
+        state: present
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >
+          NetBox populé : 1 site, 3 prefixes, 1 device pfSense (4 interfaces, 3 IPs),
+          2 VMs (2 interfaces, 2 IPs), 3 services, 1 tunnel VPN.

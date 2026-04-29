@@ -1,0 +1,44 @@
+- name: Generate NetBox API token and store in Vault
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    netbox_url: "https://localhost:8443"
+    netbox_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:admin_password',
+                               url=lookup('env', 'VAULT_ADDR'),
+                               token=lookup('env', 'VAULT_TOKEN'),
+                               validate_certs=false) }}"
+
+  tasks:
+    - name: Provision NetBox API token via REST API
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/users/tokens/provision/"
+        method: POST
+        body_format: json
+        body:
+          username: "admin"
+          password: "{{ netbox_admin_password }}"
+        validate_certs: false
+        status_code: [200, 201]
+      register: token_response
+      no_log: true
+
+    - name: Store API token in Vault (patch existing secret)
+      ansible.builtin.uri:
+        url: "{{ lookup('env', 'VAULT_ADDR') }}/v1/secret/data/netbox"
+        method: PATCH
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+          Content-Type: "application/merge-patch+json"
+        body_format: json
+        body:
+          data:
+            api_token: "{{ token_response.json.key }}"
+        validate_certs: false
+        status_code: 200
+      no_log: true
+
+    - name: Confirm token stored
+      ansible.builtin.debug:
+        msg: "NetBox API token stored in Vault at secret/netbox:api_token"
