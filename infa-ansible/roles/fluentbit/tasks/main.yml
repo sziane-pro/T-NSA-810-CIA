@@ -1,0 +1,40 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Add Fluent Bit GPG key
+  ansible.builtin.apt_key:
+    url: https://packages.fluentbit.io/fluentbit.key
+    state: present
+
+- name: Add Fluent Bit repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://packages.fluentbit.io/ubuntu/{{ ansible_distribution_release }} {{ ansible_distribution_release }} main"
+    state: present
+
+- name: Install Fluent Bit
+  ansible.builtin.apt:
+    name: fluent-bit
+    state: present
+    update_cache: true
+
+- name: Deploy Fluent Bit configuration
+  ansible.builtin.template:
+    src: fluent-bit.conf.j2
+    dest: /etc/fluent-bit/fluent-bit.conf
+    owner: root
+    group: root
+    mode: '0600'
+  notify: restart fluent-bit
+
+- name: Enable and start Fluent Bit
+  ansible.builtin.systemd:
+    name: fluent-bit
+    enabled: true
+    state: started
