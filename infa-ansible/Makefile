@@ -9,10 +9,14 @@ export
 SITE1_INVENTORY := inventories/site1
 SITE2_INVENTORY := inventories/site2
 
+LAN_VM_PORT   ?= 2221
+ADMIN_VM_PORT ?= 2222
+
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
         site1-netbox-token site1-netbox-populate \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
+        ssh-pfsense ssh-lan ssh-admin \
         ping
 
 help:
@@ -38,6 +42,11 @@ help:
 	@echo "  make tunnel-all          - Tous les tunnels en une commande"
 	@echo ""
 	@echo "  make ping                - Teste la connectivite vers tous les hotes"
+	@echo ""
+	@echo "  --- Connexions SSH ---"
+	@echo "  make ssh-pfsense         - SSH vers pfSense"
+	@echo "  make ssh-lan             - SSH vers lan_vm  (port $(LAN_VM_PORT))"
+	@echo "  make ssh-admin           - SSH vers admin_vm (port $(ADMIN_VM_PORT))"
 
 install:
 	ansible-galaxy collection install -r requirements.yml --upgrade
@@ -151,3 +160,14 @@ tunnel-all:
 ping:
 	ansible all -i $(SITE1_INVENTORY) -m ping
 	ansible all -i $(SITE2_INVENTORY) -m ping
+
+# --- Connexions SSH ---
+
+ssh-pfsense:
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no $(GATEWAY_USER)@$(GATEWAY_HOST)
+
+ssh-lan:
+	ssh -p $(LAN_VM_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no sysadmin@$(GATEWAY_HOST)
+
+ssh-admin:
+	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no sysadmin@$(GATEWAY_HOST)
