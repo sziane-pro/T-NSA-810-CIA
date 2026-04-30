@@ -1,0 +1,27 @@
+[SERVICE]
+    Flush         5
+    Log_Level     warning
+    Daemon        Off
+
+[INPUT]
+    Name          tail
+    Path          /var/log/auth.log,/var/log/syslog
+    Tag           system
+    Read_From_Head False
+
+[FILTER]
+    Name          record_modifier
+    Match         *
+    Record        source_host {{ inventory_hostname }}
+
+[OUTPUT]
+    Name          opensearch
+    Match         *
+    Host          {{ opensearch_host }}
+    Port          9200
+    HTTP_User     admin
+    HTTP_Passwd   {{ opensearch_admin_password }}
+    TLS           On
+    TLS.Verify    Off
+    Index         fluent-bit
+    Suppress_Type_Name On

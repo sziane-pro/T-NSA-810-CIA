@@ -1,6 +1,3 @@
-# Peuple NetBox avec l'infrastructure de Site 1.
-# Pré-requis : tunnels SSH ouverts (8200 -> Vault, 8443 -> NetBox)
-# Exécuter via : make site1-netbox-populate
 - name: Populate NetBox with Site 1 infrastructure
   hosts: localhost
   connection: local

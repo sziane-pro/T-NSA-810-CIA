@@ -1,0 +1,18 @@
+---
+# Installe et configure Fluent Bit sur toutes les VMs Site 1
+# Envoie les logs vers OpenSearch (lan_vm:9200)
+# Pre-requis : tunnel SSH ouvert (8200 -> Vault)
+# Executer via : make site1-filebeat
+- name: Install Fluent Bit
+  hosts: site1
+  gather_facts: true
+
+  vars:
+    opensearch_host: "192.168.10.101"
+    opensearch_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:opensearch_admin_password',
+                                   url=lookup('env', 'VAULT_ADDR'),
+                                   token=lookup('env', 'VAULT_TOKEN'),
+                                   validate_certs=false) }}"
+
+  roles:
+    - fluentbit

@@ -14,7 +14,7 @@ ADMIN_VM_PORT ?= 2222
 
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
-        site1-netbox-token site1-netbox-populate \
+        site1-netbox-token site1-netbox-populate site1-filebeat \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ping
@@ -34,6 +34,7 @@ help:
 	@echo "  make site1-pki            - Genere la PKI Site 1 uniquement"
 	@echo "  make site1-netbox-token   - Genere le token API NetBox et le stocke dans Vault"
 	@echo "  make site1-netbox-populate - Peuple NetBox avec l'infrastructure Site 1"
+	@echo "  make site1-filebeat        - Installe Filebeat sur toutes les VMs Site 1"
 	@echo ""
 	@echo "  --- Tunnels SSH ---"
 	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
@@ -64,7 +65,8 @@ site1-pfsense-vpn:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags vpn
 
 site1-vault:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml --ask-become-pass
+	@echo ">>> Mot de passe sudo de admin_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml --ask-become-pass
 
 site1-lan:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
@@ -73,14 +75,17 @@ site1-lan:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	@echo ">>> Mot de passe sudo de lan_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass
+	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vpn:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
+	@echo ">>> Mot de passe sudo de admin_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
 
 site1-pki:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass --tags pki
+	@echo ">>> Mot de passe sudo de admin_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass --tags pki
 
 site1-netbox-token:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
@@ -93,6 +98,19 @@ site1-netbox-token:
 	@read -p "Token Vault admin (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
+
+site1-filebeat:
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@echo ">>> Mot de passe sudo de lan_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --ask-become-pass --limit lan_vm
+	@echo ">>> Mot de passe sudo de admin_vm :"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --ask-become-pass --limit admin_vm
+	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-netbox-populate:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
