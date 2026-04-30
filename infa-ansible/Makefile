@@ -90,7 +90,8 @@ site1-netbox-token:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
+	@read -p "Token Vault admin (root) : " vault_token; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 site1-netbox-populate:
