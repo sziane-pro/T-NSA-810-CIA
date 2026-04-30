@@ -1,0 +1,119 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.2" pages="2">
+  <diagram name="Architecture-Visuelle-V2" id="F83rpg5yaiTyaYu6REBP">
+    <mxGraphModel dx="2246" dy="2492" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="w5LOYeg59kwmk8rpsy6B-7" edge="1" parent="1" source="cloud" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="vpn-label" value="0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cloud" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;fontSize=16;fontStyle=1" value="INTERNET (WAN)" vertex="1">
+          <mxGeometry height="180" width="280" x="680" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="user-ext" parent="1" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;" value="&lt;div&gt;Admin&amp;nbsp;&lt;/div&gt;&lt;div&gt;Externe&amp;nbsp;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="60" x="790" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vpn-label" parent="1" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontStyle=1;fontColor=#b85450;" value="TUNNEL VPN CHIFFRÉ (10.0.0.0/30)&lt;div&gt;DNS forward S2 → S1&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="220" x="710" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="site1-box" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=14;startSize=40;" value="SITE 1 - (On-Premise)" vertex="1">
+          <mxGeometry height="600" width="480" x="80" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="fw1" parent="site1-box" style="shape=mxgraph.aws4.firewall;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#c65911;fontStyle=1;" value="OPNSense Paris&lt;br&gt;192.168.10.1" vertex="1">
+          <mxGeometry height="80" width="80" x="360" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="lan1-box" parent="site1-box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;verticalAlign=top;spacing=10;" value="LAN 192.168.10.0/24" vertex="1">
+          <mxGeometry height="200" width="160" x="40" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-1" parent="lan1-box" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;gradientColor=#97d077;" value="Vault&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;192.168.30.100&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="136.67" width="120" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-9" connectable="0" parent="site1-box" style="group" value="" vertex="1">
+          <mxGeometry height="200" width="160" x="280" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz1-box" parent="1vRtjRk_yk85mPonUzW4-9" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=10;fillColor=light-dark(#FAD9D5,#2A1E30);strokeColor=#ae4132;container=0;" value="DMZ&amp;nbsp;192.168.20.0/24" vertex="1">
+          <mxGeometry height="200" width="160" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-8" parent="1vRtjRk_yk85mPonUzW4-9" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fillColor=#e6d0de;strokeColor=#996185;fontStyle=1;gradientColor=#d5739d;" value="NetBox (IPAM)&lt;br&gt;&lt;br&gt;OpenSearch&lt;br&gt;(Monitoring)&lt;div&gt;&lt;br&gt;&lt;div&gt;192.168.20.100&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="136.67" width="120" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="site2-box" parent="1" style="swimlane;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=14;startSize=40;" value="SITE 2 - (Remote)" vertex="1">
+          <mxGeometry height="600" width="480" x="1040" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="fw2" parent="site2-box" style="shape=mxgraph.aws4.firewall;whiteSpace=wrap;html=1;fillColor=#ffcc99;strokeColor=#c65911;fontStyle=1;" value="OPNSense&amp;nbsp;&lt;div&gt;Site 2&lt;br&gt;192.168.130.1&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="80" x="40" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-bastion-int" edge="1" parent="site2-box" source="fw2" style="endArrow=classic;html=1;strokeColor=#009900;strokeWidth=3;" target="bastion" value="2. Accès Interne">
+          <mxGeometry height="50" relative="1" width="50" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-5" connectable="0" parent="site2-box" style="group" value="" vertex="1">
+          <mxGeometry height="200" width="160" x="280" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="lan2-box" parent="1vRtjRk_yk85mPonUzW4-5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#B1DDF0,#1E2630);strokeColor=#10739e;align=left;verticalAlign=top;spacing=10;" value="LAN 192.168.110.0/24" vertex="1">
+          <mxGeometry height="200" width="160" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-2" parent="1vRtjRk_yk85mPonUzW4-5" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;gradientColor=#7ea6e0;" value="Serveur web&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;192.168.110.100&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="120" x="20" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="1vRtjRk_yk85mPonUzW4-6" connectable="0" parent="site2-box" style="group" value="" vertex="1">
+          <mxGeometry height="200" width="180" x="40" y="359" as="geometry" />
+        </mxCell>
+        <mxCell id="dmz2-box" parent="1vRtjRk_yk85mPonUzW4-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFE6CC,#30241E);strokeColor=#d79b00;align=left;verticalAlign=top;spacing=10;" value="DMZ&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;192.168.120.0/24&lt;/span&gt;" vertex="1">
+          <mxGeometry height="200" width="160" as="geometry" />
+        </mxCell>
+        <mxCell id="bastion" parent="1vRtjRk_yk85mPonUzW4-6" style="shape=cube;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;darkOpacity=0.05;darkOpacity2=0.1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11" value="BASTION SSH&#xa;(Porte d&#39;entrée)&#xa;192.168.120.10" vertex="1">
+          <mxGeometry height="130" width="120" x="20" y="41" as="geometry" />
+        </mxCell>
+        <mxCell id="link-vpn" edge="1" parent="1" source="fw1" style="endArrow=none;dashed=1;html=1;strokeColor=#FF0000;strokeWidth=4;" target="fw2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="650" y="400" />
+              <mxPoint x="990" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow-vpn-admin" edge="1" parent="1" source="lan1-box" style="endArrow=classic;html=1;strokeColor=#0000FF;strokeWidth=2;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" value="Admin vers site 2 (SSH)">
+          <mxGeometry height="50" relative="1" width="50" x="-0.3972" y="2" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="200" y="260" />
+              <mxPoint x="650" y="260" />
+            </Array>
+            <mxPoint x="140" y="510" as="sourcePoint" />
+            <mxPoint x="1100" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="flow-ext" edge="1" parent="1" source="user-ext" style="endArrow=classic;html=1;strokeColor=#009900;strokeWidth=3;" target="fw2" value="1. SSH (Port 22)">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <Array as="points">
+              <mxPoint x="820" y="150" />
+              <mxPoint x="1120" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="w5LOYeg59kwmk8rpsy6B-3" edge="1" parent="1" source="w5LOYeg59kwmk8rpsy6B-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeColor=light-dark(#000000,#CC0000);strokeWidth=3;" target="fw2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="w5LOYeg59kwmk8rpsy6B-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#E51400,#FF0000);fontColor=#ffffff;strokeColor=#B20000;" value="KILL SWITCH" vertex="1">
+          <mxGeometry height="60" width="120" x="1080" y="-90" as="geometry" />
+        </mxCell>
+        <mxCell id="w5LOYeg59kwmk8rpsy6B-4" edge="1" parent="1" source="w5LOYeg59kwmk8rpsy6B-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=light-dark(#000000,#CC0000);strokeWidth=3;" target="fw1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="520" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="w5LOYeg59kwmk8rpsy6B-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#E51400,#FF0000);fontColor=#ffffff;strokeColor=#B20000;" value="KILL SWITCH" vertex="1">
+          <mxGeometry height="60" width="120" x="420" y="-80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Page-2" id="5douuSr-exNDPZnwrdht">
+    <mxGraphModel dx="1896" dy="1017" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
