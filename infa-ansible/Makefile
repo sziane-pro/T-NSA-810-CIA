@@ -124,21 +124,15 @@ site1-netbox-populate:
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 # --- Site 2 ---
-# Les cibles Site 2 sont a implementer par l'equipe Site 2.
-# L'inventaire est disponible dans inventories/site2/ avec les variables pre-remplies.
-# Pour ajouter les cibles, suivre le meme modele que Site 1 en remplacant
-# $(SITE1_INVENTORY) par $(SITE2_INVENTORY).
-#
-# Exemple :
-#
-# site2-pfsense:
-# 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml
-#
-# site2-pfsense-rules:
-# 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags rules
-#
-# site2-lan:
-# 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass
+
+site2-pfsense:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml
+
+site2-pfsense-rules:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags rules
+
+site2-pfsense-nat:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags nat
 
 # --- Global ---
 

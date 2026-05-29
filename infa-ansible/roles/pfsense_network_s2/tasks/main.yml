@@ -1,0 +1,5 @@
+- import_tasks: rules.yml
+  tags: rules
+
+- import_tasks: nat.yml
+  tags: nat
