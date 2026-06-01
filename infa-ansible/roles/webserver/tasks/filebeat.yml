@@ -1,0 +1,35 @@
+---
+# ============================================================
+# Filebeat — Envoi des logs Nginx vers OpenSearch Site 1
+# ============================================================
+
+- name: Add Elastic APT key
+  ansible.builtin.apt_key:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elastic APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://artifacts.elastic.co/packages/8.x/apt stable main"
+    state: present
+    filename: elastic-8
+
+- name: Ensure Filebeat is installed
+  ansible.builtin.package:
+    name: filebeat
+    state: present
+
+- name: Deploy Filebeat configuration
+  ansible.builtin.template:
+    src: filebeat.yml.j2
+    dest: /etc/filebeat/filebeat.yml
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart filebeat
+
+- name: Ensure Filebeat is enabled and started
+  ansible.builtin.service:
+    name: filebeat
+    state: started
+    enabled: true
