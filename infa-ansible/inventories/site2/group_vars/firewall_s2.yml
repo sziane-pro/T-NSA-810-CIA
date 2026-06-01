@@ -21,6 +21,7 @@ webserver_nat_port: "2232"
 # IPs externes autorisees
 epitetch_network_ip: "163.5.3.84"
 samy_network_ip: "90.49.150.217"
+anais_network_ip: "176.159.255.103"
 
 # VPN Site-a-Site
 site1_wan_ip: "5.196.51.228"

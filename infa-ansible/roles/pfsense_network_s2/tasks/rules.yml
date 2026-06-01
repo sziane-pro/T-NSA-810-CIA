@@ -50,6 +50,30 @@
     destination_port: "22"
     state: present
 
+- name:  Allow HTTPS to firewall from Anais
+  pfsensible.core.pfsense_rule:
+    name: "Allow HTTPS firewall Anais"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ anais_network_ip }}"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name:  Allow SSH to firewall from Anais
+  pfsensible.core.pfsense_rule:
+    name: "Allow SSH firewall Anais"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ anais_network_ip }}"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
 # ============================================================
 # Règles WAN — Accès SSH vers VMs internes (via NAT)
 # ============================================================
