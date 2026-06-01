@@ -24,6 +24,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
         site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-bastion site2-webserver site2-all \
+        site2-check site2-pfsense-check site2-bastion-check site2-webserver-check \
         ping ping-s2
 
 help:
@@ -58,6 +59,12 @@ help:
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo "  make site2-webserver      - Configure le WebServer Site 2 (Nginx + Filebeat vers OpenSearch)"
 	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver)"
+	@echo ""
+	@echo "  --- Dry-run Site 2 (simulation) ---"
+	@echo "  make site2-check          - Simule tout le deploiement Site 2"
+	@echo "  make site2-pfsense-check  - Simule la config pfSense Site 2"
+	@echo "  make site2-bastion-check  - Simule la config Bastion Site 2"
+	@echo "  make site2-webserver-check - Simule la config WebServer Site 2"
 	@echo ""
 	@echo "  --- Connexions SSH Site 2 ---"
 	@echo "  make ssh-pfsense-s2      - SSH vers pfSense Site 2"
@@ -149,7 +156,7 @@ site1-netbox-populate:
 # --- Site 2 ---
 
 site2-pfsense:
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --skip-tags vpn
 
 site2-pfsense-rules:
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags rules
@@ -174,6 +181,20 @@ site2-all:
 	@$(MAKE) site2-pfsense
 	@$(MAKE) site2-bastion
 	@$(MAKE) site2-webserver
+
+site2-check:
+	@$(MAKE) site2-pfsense-check
+	@$(MAKE) site2-bastion-check
+	@$(MAKE) site2-webserver-check
+
+site2-pfsense-check:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --check --diff --skip-tags vpn
+
+site2-bastion-check:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --check --diff --ask-become-pass
+
+site2-webserver-check:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml --check --diff --ask-become-pass
 
 # --- Global ---
 

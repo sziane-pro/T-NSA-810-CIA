@@ -121,18 +121,3 @@
     destination: "{{ webserver_ip }}"
     destination_port: "80"
     state: present
-
-# ============================================================
-# Règles VPN — Trafic depuis Site 1 vers Site 2
-# ============================================================
-
-- name: Allow traffic from Site 1 via VPN tunnel
-  pfsensible.core.pfsense_rule:
-    name: "VPN Site1 to Site2"
-    action: pass
-    interface: openvpn
-    ipprotocol: inet
-    protocol: any
-    source: "{{ vpn_site1_lan }}"
-    destination: any
-    state: present

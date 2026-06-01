@@ -10,10 +10,8 @@
     interface: WAN
     protocol: tcp
     source: any
-    destination: "(self)"
-    destination_port: "{{ bastion_nat_port }}"
-    target: "{{ bastion_ip }}"
-    local_port: "22"
+    destination: "(self):{{ bastion_nat_port }}"
+    target: "{{ bastion_ip }}:22"
     state: present
 
 - name: NAT port forward 2232 to WebServer SSH
@@ -22,8 +20,6 @@
     interface: WAN
     protocol: tcp
     source: any
-    destination: "(self)"
-    destination_port: "{{ webserver_nat_port }}"
-    target: "{{ webserver_ip }}"
-    local_port: "22"
+    destination: "(self):{{ webserver_nat_port }}"
+    target: "{{ webserver_ip }}:22"
     state: present
