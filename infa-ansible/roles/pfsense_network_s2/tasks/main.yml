@@ -3,3 +3,6 @@
 
 - import_tasks: nat.yml
   tags: nat
+
+- import_tasks: vpn.yml
+  tags: vpn

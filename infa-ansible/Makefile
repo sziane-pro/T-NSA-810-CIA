@@ -17,6 +17,7 @@ ADMIN_VM_PORT ?= 2222
         site1-netbox-token site1-netbox-populate site1-filebeat \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn \
         ping
 
 help:
@@ -41,6 +42,13 @@ help:
 	@echo "  make tunnel-vault        - Tunnel vers Vault      (localhost:8200)"
 	@echo "  make tunnel-opensearch   - Tunnel vers OpenSearch (localhost:9200)"
 	@echo "  make tunnel-all          - Tous les tunnels en une commande"
+	@echo "  make site1-pki           - Genere la PKI Site 1 uniquement"
+	@echo ""
+	@echo "  --- Site 2 ---"
+	@echo "  make site2-pfsense       - Configure pfSense Site 2 (regles + NAT)"
+	@echo "  make site2-pfsense-rules - Regles firewall Site 2 uniquement"
+	@echo "  make site2-pfsense-nat   - NAT Site 2 uniquement"
+	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (necessite site1-vpn fait)"
 	@echo ""
 	@echo "  make ping                - Teste la connectivite vers tous les hotes"
 	@echo ""
@@ -133,6 +141,10 @@ site2-pfsense-rules:
 
 site2-pfsense-nat:
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags nat
+
+site2-vpn:
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
 
 # --- Global ---
 
