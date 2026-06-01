@@ -1,0 +1,7 @@
+---
+- name: Configure Bastion Host Site 2
+  hosts: bastion_vm
+  gather_facts: true
+
+  roles:
+    - bastion

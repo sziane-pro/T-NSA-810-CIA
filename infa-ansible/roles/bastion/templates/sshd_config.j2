@@ -1,0 +1,33 @@
+# Managed by Ansible — do not edit manually
+Port {{ ssh_port | default(22) }}
+AddressFamily inet
+ListenAddress {{ bastion_listen_address }}
+
+# Authentication
+PermitRootLogin no
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+AllowUsers {{ ssh_allowed_users }}
+
+# Hardening
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding yes
+PrintMotd no
+AcceptEnv LANG LC_*
+
+# Logging
+LogLevel VERBOSE
+SyslogFacility AUTH
+
+# Timeouts
+LoginGraceTime 30
+MaxAuthTries 3
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# Subsystems
+Subsystem sftp /usr/lib/openssh/sftp-server

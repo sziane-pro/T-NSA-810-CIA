@@ -1,0 +1,9 @@
+---
+- import_tasks: ssh.yml
+  tags: ssh
+
+- import_tasks: fail2ban.yml
+  tags: fail2ban
+
+- import_tasks: logging.yml
+  tags: logging

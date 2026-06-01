@@ -1,0 +1,31 @@
+---
+# ============================================================
+# Logging — rsyslog centralisation + journald persistant
+# ============================================================
+
+- name: Ensure rsyslog is installed
+  ansible.builtin.package:
+    name: rsyslog
+    state: present
+
+- name: Deploy rsyslog configuration
+  ansible.builtin.template:
+    src: rsyslog-bastion.conf.j2
+    dest: /etc/rsyslog.d/50-bastion.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart rsyslog
+
+- name: Ensure journald logs are persistent
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: "^#?Storage="
+    line: "Storage=persistent"
+  notify: restart journald
+
+- name: Ensure rsyslog is enabled and started
+  ansible.builtin.service:
+    name: rsyslog
+    state: started
+    enabled: true

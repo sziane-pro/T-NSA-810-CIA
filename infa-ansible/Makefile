@@ -17,7 +17,7 @@ ADMIN_VM_PORT ?= 2222
         site1-netbox-token site1-netbox-populate site1-filebeat \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-bastion \
         ping
 
 help:
@@ -49,6 +49,7 @@ help:
 	@echo "  make site2-pfsense-rules - Regles firewall Site 2 uniquement"
 	@echo "  make site2-pfsense-nat   - NAT Site 2 uniquement"
 	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (necessite site1-vpn fait)"
+	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo ""
 	@echo "  make ping                - Teste la connectivite vers tous les hotes"
 	@echo ""
@@ -145,6 +146,10 @@ site2-pfsense-nat:
 site2-vpn:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
+
+site2-bastion:
+	@echo ">>> Mot de passe sudo de bastion_vm :"
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --ask-become-pass
 
 # --- Global ---
 
