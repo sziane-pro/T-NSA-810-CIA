@@ -9,16 +9,22 @@ export
 SITE1_INVENTORY := inventories/site1
 SITE2_INVENTORY := inventories/site2
 
-LAN_VM_PORT   ?= 2221
-ADMIN_VM_PORT ?= 2222
+LAN_VM_PORT      ?= 2221
+ADMIN_VM_PORT    ?= 2222
+
+BASTION_PORT     ?= 2231
+WEBSERVER_PORT   ?= 2232
+S2_GATEWAY_HOST  ?= 5.39.122.40
+S2_GATEWAY_USER  ?= t-nsa-810-cia
 
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
         site1-netbox-token site1-netbox-populate site1-filebeat \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-bastion site2-webserver \
-        ping
+        ssh-pfsense-s2 ssh-bastion ssh-webserver \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-bastion site2-webserver site2-all \
+        ping ping-s2
 
 help:
 	@echo "Usage:"
@@ -51,12 +57,19 @@ help:
 	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (necessite site1-vpn fait)"
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo "  make site2-webserver      - Configure le WebServer Site 2 (Nginx + Filebeat vers OpenSearch)"
+	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver)"
+	@echo ""
+	@echo "  --- Connexions SSH Site 2 ---"
+	@echo "  make ssh-pfsense-s2      - SSH vers pfSense Site 2"
+	@echo "  make ssh-bastion         - SSH vers Bastion     (port $(BASTION_PORT))"
+	@echo "  make ssh-webserver       - SSH vers WebServer   (port $(WEBSERVER_PORT))"
 	@echo ""
 	@echo "  make ping                - Teste la connectivite vers tous les hotes"
+	@echo "  make ping-s2             - Teste la connectivite Site 2 uniquement"
 	@echo ""
-	@echo "  --- Connexions SSH ---"
-	@echo "  make ssh-pfsense         - SSH vers pfSense"
-	@echo "  make ssh-lan             - SSH vers lan_vm  (port $(LAN_VM_PORT))"
+	@echo "  --- Connexions SSH Site 1 ---"
+	@echo "  make ssh-pfsense         - SSH vers pfSense Site 1"
+	@echo "  make ssh-lan             - SSH vers lan_vm   (port $(LAN_VM_PORT))"
 	@echo "  make ssh-admin           - SSH vers admin_vm (port $(ADMIN_VM_PORT))"
 
 install:
@@ -156,6 +169,12 @@ site2-webserver:
 	@echo ">>> Mot de passe sudo de webserver_vm :"
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml --ask-become-pass
 
+site2-all:
+	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver)"
+	@$(MAKE) site2-pfsense
+	@$(MAKE) site2-bastion
+	@$(MAKE) site2-webserver
+
 # --- Global ---
 
 tunnel-netbox:
@@ -196,7 +215,10 @@ ping:
 	ansible all -i $(SITE1_INVENTORY) -m ping
 	ansible all -i $(SITE2_INVENTORY) -m ping
 
-# --- Connexions SSH ---
+ping-s2:
+	ansible all -i $(SITE2_INVENTORY) -m ping
+
+# --- Connexions SSH Site 1 ---
 
 ssh-pfsense:
 	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no $(GATEWAY_USER)@$(GATEWAY_HOST)
@@ -206,3 +228,14 @@ ssh-lan:
 
 ssh-admin:
 	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no sysadmin@$(GATEWAY_HOST)
+
+# --- Connexions SSH Site 2 ---
+
+ssh-pfsense-s2:
+	ssh -p 22 -i $(SSH_KEY) -o StrictHostKeyChecking=no admin@$(S2_GATEWAY_HOST)
+
+ssh-bastion:
+	ssh -p $(BASTION_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no $(S2_GATEWAY_USER)@$(S2_GATEWAY_HOST)
+
+ssh-webserver:
+	ssh -p $(WEBSERVER_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no $(S2_GATEWAY_USER)@$(S2_GATEWAY_HOST)
