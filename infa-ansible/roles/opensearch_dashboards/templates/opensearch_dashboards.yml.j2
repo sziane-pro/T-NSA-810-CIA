@@ -1,0 +1,15 @@
+server.port: {{ opensearch_dashboards_port }}
+server.host: "{{ opensearch_dashboards_host }}"
+
+# Pointage vers la VM du Site 1
+opensearch.hosts: ["{{ opensearch_hosts }}"]
+
+# Authentification
+opensearch.username: "{{ opensearch_dashboards_user }}"
+opensearch.password: "{{ opensearch_dashboards_password }}"
+
+# Gestion des certificats (Utile si les certificats sont auto-signés)
+opensearch.ssl.verificationMode: none
+
+# Configuration des index de Dashboards
+opensearch_dashboards.index: ".kibana"
