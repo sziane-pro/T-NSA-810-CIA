@@ -6,3 +6,6 @@ infa-ansible/pki/
 infa-ansible/.env
 *.tar.gz
 *.snap
+
+# Fichiers de configuration locale
+*.idea
