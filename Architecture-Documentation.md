@@ -1,11 +1,16 @@
 # Architecture Réseau - Infrastructure Hybride Proxmox
+
+
 ## Contexte et Objectifs
 Conception d'une infrastructure hybride sécurisée composée de deux sites Proxmox (on-premise et remote) avec interconnexion VPN, pare-feu, IPAM automatisé, monitoring centralisé et capacité d'extension future.
 **Contraintes techniques:**
 * Maximum 3 VMs par site Proxmox
 * Technologies maintenues et supportées par la communauté
 * Architecture évolutive pour intégration de sites supplémentaires
+
+
 ## Architecture Réseau Proposée
+
 ### Site 1 - On-Premise (Datacenter Principal)
 **Réseaux segmentés:**
 * **LAN:** 192.168.10.0/24 (réseau utilisateurs)
@@ -27,6 +32,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
     * Collecte de logs centralisée
     * Stockage et analyse des métriques
     * Dashboards Kibana
+
 ### Site 2 - Remote (Site Distant)
 **Réseaux segmentés:**
 * **LAN:** 192.168.110.0/24 (réseau utilisateurs)
@@ -48,6 +54,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
 3. **WebServer-Internal** (192.168.110.10) - Site web interne
     * Application web accessible uniquement depuis le réseau interne
     * Logs envoyés vers Elasticsearch
+
 ### Interconnexion VPN Site-à-Site
 **Configuration OpenVPN:**
 * **Tunnel Principal:** 10.0.0.0/30
@@ -59,6 +66,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
 **Réseaux routés via VPN:**
 * Site 1 → Site 2: 192.168.110.0/24, 192.168.120.0/24, 192.168.130.0/24
 * Site 2 → Site 1: 192.168.10.0/24, 192.168.20.0/24, 192.168.30.0/24
+
 ### Sécurité et Pare-feu
 **Règles OPNSense principales:**
 **Site 1 (OPNSense-S1):**
@@ -75,6 +83,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
 * DMZ → LAN: Bastion vers LAN restreint
 * ADMIN → ALL: Management local
 * Règle d'urgence: Kill switch pour isoler le site
+
 ### DNS et Résolution de Noms
 **Configuration DNS:**
 * **Site 1:** OPNSense-S1 comme DNS principal (192.168.10.1)
@@ -88,6 +97,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
 **Forwarding entre sites:**
 * Résolution site1.local ↔ site2.local via VPN
 * Synchronisation des zones DNS
+
 ### IPAM et Automatisation
 **NetBox (192.168.20.10):**
 * **Préfixes gérés:**
@@ -99,6 +109,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
     * Synchronisation avec OPNSense via scripts
     * Documentation automatique de la topologie
     * Webhooks pour mises à jour en temps réel
+
 ### Monitoring et Observabilité
 **Elasticsearch (192.168.20.20):**
 * **Sources de logs:**
@@ -115,6 +126,7 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
     * Monitoring VPN et connectivité
     * Analyse des connexions bastion
     * Alerting sur anomalies
+
 ### Accès Externe et Bastion
 **Bastion Host (192.168.120.10):**
 * **Accès autorisés:**
@@ -127,12 +139,14 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
     * Session recording et logging
     * Fail2ban contre brute force
     * Accès restreint par plages horaires
+
 ### Capacité d'Urgence (Kill Switch)
 **Mécanismes de coupure:**
 * **Site 1:** Règle OPNSense pour bloquer tout trafic VPN
 * **Site 2:** Isolation complète avec maintien accès bastion
 * **Procédure de récupération:** Scripts automatisés de reconnexion
 * **Monitoring:** Alertes automatiques en cas de déconnexion
+
 ### Scalabilité et Extension Future
 **Convention d'adressage:**
 * Site 1: 192.168.1X.0/24
@@ -144,6 +158,8 @@ Conception d'une infrastructure hybride sécurisée composée de deux sites Prox
 * Déploiement VM automatisé via Terraform
 * Règles firewall modulaires
 * Intégration NetBox automatique
+
+
 ## Services Centralisés
 * **IPAM:** NetBox sur Site 1 (source de vérité unique)
 * **Monitoring:** Elasticsearch sur Site 1 (collecte multi-sites)
