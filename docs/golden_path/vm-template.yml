@@ -1,0 +1,94 @@
+---
+# Golden Path — VM template
+# Objectif :
+# Définir un modèle standard et réutilisable pour documenter ou préparer
+# la création d'une VM dans l'infrastructure Proxmox du projet CIA.
+
+vm_template:
+  # Identité de la VM
+  name: "{{ vm_name }}"
+  hostname: "{{ hostname }}"
+  site: "{{ site_name }}"
+  role: "{{ vm_role }}"
+  description: "{{ vm_description }}"
+
+  # Plateforme de virtualisation
+  hypervisor:
+    platform: "Proxmox VE"
+    node: "{{ proxmox_node }}"
+    cluster: "{{ proxmox_cluster }}"
+    vm_id: "{{ vm_id }}"
+
+  # Ressources matérielles
+  resources:
+    cpu_cores: "{{ cpu_cores }}"
+    memory_mb: "{{ memory_mb }}"
+    disk_gb: "{{ disk_gb }}"
+    disk_type: "{{ disk_type }}"
+    storage_pool: "{{ storage_pool }}"
+
+  # Système d'exploitation
+  operating_system:
+    family: "{{ os_family }}"
+    distribution: "{{ os_distribution }}"
+    version: "{{ os_version }}"
+    image: "{{ os_image }}"
+
+  # Réseau principal
+  network:
+    primary_interface: "{{ primary_interface }}"
+    bridge: "{{ proxmox_bridge }}"
+    vlan_id: "{{ vlan_id }}"
+    network_zone: "{{ network_zone }}"
+    ip_address: "{{ ip_address }}"
+    netmask: "{{ netmask }}"
+    gateway: "{{ gateway }}"
+    dns_servers:
+      - "{{ dns_server_1 }}"
+      - "{{ dns_server_2 }}"
+
+  # Sécurité de base
+  security_baseline:
+    ssh_enabled: true
+    ssh_password_authentication: false
+    ssh_key_authentication: true
+    sudo_required: true
+    firewall_enabled: true
+    automatic_updates: true
+
+  # Accès administrateur
+  administration:
+    admin_user: "{{ admin_user }}"
+    access_method: "SSH"
+    allowed_from:
+      - "{{ admin_network }}"
+      - "{{ bastion_ip }}"
+
+  # Observabilité
+  observability:
+    logging_enabled: true
+    monitoring_enabled: true
+    log_agent: "{{ log_agent }}"
+    log_destination: "{{ log_destination }}"
+    metrics_enabled: "{{ metrics_enabled }}"
+
+  # Sauvegarde et restauration
+  backup:
+    enabled: "{{ backup_enabled }}"
+    frequency: "{{ backup_frequency }}"
+    retention: "{{ backup_retention }}"
+    restore_priority: "{{ restore_priority }}"
+
+  # Tags NetBox / documentation
+  tags:
+    - "managed-by-iac"
+    - "golden-path"
+    - "{{ site_name }}"
+    - "{{ vm_role }}"
+
+  # Contraintes projet
+  constraints:
+    max_vms_per_site: 3
+    must_be_documented_in_netbox: true
+    must_send_logs: true
+    must_follow_firewall_rules: true
