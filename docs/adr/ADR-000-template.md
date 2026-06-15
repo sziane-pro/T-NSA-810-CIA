@@ -1,4 +1,4 @@
-# ADR-001 - Choix d’une architecture hybride à deux sites interconnectés par VPN
+# ADR-XXX - Choix XXX
 
 ## Statut
 ...
