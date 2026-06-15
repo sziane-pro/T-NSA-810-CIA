@@ -1,34 +1,11 @@
----
 opensearch_listen_address: 192.168.10.101
-opensearch_admin_password: >-
-  {{
-    lookup(
-      'community.hashi_vault.hashi_vault',
-      'secret/data/netbox:opensearch_admin_password'
-    )
-  }}
+opensearch_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:opensearch_admin_password') }}"
 opensearch_heap_size: "512m"
 
 netbox_listen_address: 192.168.10.101
 netbox_version: "v4.1.0"
-netbox_db_password: >-
-  {{
-    lookup(
-      'community.hashi_vault.hashi_vault',
-      'secret/data/netbox:db_password'
-    )
-  }}
-netbox_admin_password: >-
-  {{
-    lookup(
-      'community.hashi_vault.hashi_vault',
-      'secret/data/netbox:admin_password'
-    )
-  }}
-netbox_secret_key: >-
-  {{
-    lookup(
-      'community.hashi_vault.hashi_vault',
-      'secret/data/netbox:secret_key'
-    )
-  }}
+netbox_db_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:db_password') }}"
+netbox_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:admin_password') }}"
+netbox_secret_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:secret_key') }}"
+
+ansible_become_pass: "{{ lookup('env', 'LAN_VM_SUDO_PASS') }}"
