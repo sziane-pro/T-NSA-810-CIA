@@ -1,0 +1,67 @@
+# ============================================================
+# Import PKI client dans pfSense-S2
+# Les fichiers sont récupérés depuis le dossier pki/ local
+# généré par make site1-vpn
+# ============================================================
+
+- name: Import CA into pfSense S2
+  pfsensible.core.pfsense_ca:
+    name: "VPN-CA"
+    method: existing
+    certificate: "{{ lookup('file', playbook_dir + '/../pki/ca.crt') | b64encode }}"
+    state: present
+
+- name: Import client certificate into pfSense S2
+  pfsensible.core.pfsense_cert:
+    name: "vpn-client-site2"
+    ca: "VPN-CA"
+    method: import
+    certificate: "{{ lookup('file', playbook_dir + '/../pki/vpn-client-site2.crt') | b64encode }}"
+    key: "{{ lookup('file', playbook_dir + '/../pki/vpn-client-site2.key') | b64encode }}"
+    state: present
+
+# ============================================================
+# Configuration client OpenVPN vers Site 1
+# ============================================================
+
+- name: Configure OpenVPN client Site 2
+  pfsensible.core.pfsense_openvpn_client:
+    name: "VPN-Site2"
+    mode: "p2p_tls"
+    interface: "WAN"
+    protocol: "UDP4"
+    server_addr: "{{ site1_wan_ip }}"
+    server_port: "{{ vpn_port }}"
+    tunnel_network: "{{ vpn_tunnel_network }}"
+    remote_network: "{{ vpn_site1_lan }},{{ vpn_site1_admin }}"
+    ca: "VPN-CA"
+    cert: "vpn-client-site2"
+    data_ciphers: "AES-256-GCM"
+    data_ciphers_fallback: "AES-256-GCM"
+    state: present
+
+# ============================================================
+# Règles firewall VPN — trafic entrant depuis Site 1
+# ============================================================
+
+- name: Allow traffic from Site 1 LAN via VPN tunnel
+  pfsensible.core.pfsense_rule:
+    name: "VPN Site1 LAN to Site2"
+    action: pass
+    interface: openvpn
+    ipprotocol: inet
+    protocol: any
+    source: "{{ vpn_site1_lan }}"
+    destination: any
+    state: present
+
+- name: Allow traffic from Site 1 Admin via VPN tunnel
+  pfsensible.core.pfsense_rule:
+    name: "VPN Site1 Admin to Site2"
+    action: pass
+    interface: openvpn
+    ipprotocol: inet
+    protocol: any
+    source: "{{ vpn_site1_admin }}"
+    destination: any
+    state: present

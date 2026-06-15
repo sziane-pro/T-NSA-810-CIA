@@ -1,0 +1,147 @@
+# ============================================================
+# Règles WAN — Accès administration depuis IPs autorisées
+# ============================================================
+
+- name: Allow HTTPS to firewall from Epitech
+  pfsensible.core.pfsense_rule:
+    name: "Allow HTTPS firewall Epitech"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ epitetch_network_ip }}"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name: Allow SSH to firewall from Epitech
+  pfsensible.core.pfsense_rule:
+    name: "Allow SSH firewall Epitech"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ epitetch_network_ip }}"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
+- name: Allow HTTPS to firewall from Samy
+  pfsensible.core.pfsense_rule:
+    name: "Allow HTTPS firewall Samy"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ samy_network_ip }}"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name: Allow SSH to firewall from Samy
+  pfsensible.core.pfsense_rule:
+    name: "Allow SSH firewall Samy"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ samy_network_ip }}"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
+- name:  Allow HTTPS to firewall from Anais
+  pfsensible.core.pfsense_rule:
+    name: "Allow HTTPS firewall Anais"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ anais_network_ip }}"
+    destination: "(self)"
+    destination_port: "443"
+    state: present
+
+- name:  Allow SSH to firewall from Anais
+  pfsensible.core.pfsense_rule:
+    name: "Allow SSH firewall Anais"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ anais_network_ip }}"
+    destination: "(self)"
+    destination_port: "22"
+    state: present
+
+# ============================================================
+# Règles WAN — Accès SSH vers VMs internes (via NAT)
+# ============================================================
+
+- name: Allow NAT SSH to Bastion
+  pfsensible.core.pfsense_rule:
+    name: "NAT SSH Bastion"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: any
+    destination: "{{ bastion_ip }}"
+    destination_port: "22"
+    state: present
+
+- name: Allow NAT SSH to WebServer
+  pfsensible.core.pfsense_rule:
+    name: "NAT SSH WebServer"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: tcp
+    source: any
+    destination: "{{ webserver_ip }}"
+    destination_port: "22"
+    state: present
+
+# ============================================================
+# Règles WAN — VPN OpenVPN client vers Site 1
+# ============================================================
+
+- name: Allow OpenVPN client to Site 1
+  pfsensible.core.pfsense_rule:
+    name: "Allow OpenVPN Site1"
+    action: pass
+    interface: WAN
+    ipprotocol: inet
+    protocol: udp
+    source: any
+    destination: "{{ site1_wan_ip }}"
+    destination_port: "{{ vpn_port }}"
+    state: present
+
+# ============================================================
+# Règles inter-VLAN — Bastion (DMZ) → WebServer (LAN)
+# ============================================================
+
+- name: Bastion to WebServer SSH
+  pfsensible.core.pfsense_rule:
+    name: "Bastion => WebServer SSH"
+    action: pass
+    interface: DMZ
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ bastion_ip }}"
+    destination: "{{ webserver_ip }}"
+    destination_port: "22"
+    state: present
+
+- name: Bastion to WebServer HTTP
+  pfsensible.core.pfsense_rule:
+    name: "Bastion => WebServer HTTP"
+    action: pass
+    interface: DMZ
+    ipprotocol: inet
+    protocol: tcp
+    source: "{{ bastion_ip }}"
+    destination: "{{ webserver_ip }}"
+    destination_port: "80"
+    state: present

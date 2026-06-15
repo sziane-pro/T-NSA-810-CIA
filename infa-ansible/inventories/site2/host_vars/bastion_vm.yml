@@ -1,0 +1,10 @@
+# Variables spécifiques au Bastion (192.168.120.10 - VLAN DMZ 120)
+bastion_listen_address: 192.168.120.10
+
+# SSH hardening
+ssh_port: 22
+ssh_allowed_users: "t-nsa-810-cia"
+
+# OpenSearch Site 1 (pour envoi logs)
+opensearch_host: 192.168.10.101
+opensearch_port: 9200

@@ -1,0 +1,11 @@
+# Managed by Ansible — do not edit manually
+# Bastion SSH logs — centralisation locale
+
+# Log tous les évènements d'authentification
+auth,authpriv.*                 /var/log/auth.log
+
+# Log SSH complet (LogLevel VERBOSE)
+:programname, isequal, "sshd"  /var/log/sshd.log
+
+# Éviter la duplication dans syslog générique
+& stop

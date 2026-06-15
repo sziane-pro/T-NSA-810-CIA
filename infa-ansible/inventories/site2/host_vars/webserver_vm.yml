@@ -1,0 +1,9 @@
+# Variables spécifiques au WebServer (192.168.110.100 - VLAN LAN 110)
+webserver_listen_address: 192.168.110.100
+
+# Nginx
+webserver_port: 80
+
+# OpenSearch Site 1 (pour envoi logs Filebeat)
+opensearch_host: 192.168.10.101
+opensearch_port: 9200

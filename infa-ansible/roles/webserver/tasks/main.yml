@@ -1,0 +1,6 @@
+---
+- import_tasks: nginx.yml
+  tags: nginx
+
+- import_tasks: filebeat.yml
+  tags: filebeat
