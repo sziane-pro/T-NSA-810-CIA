@@ -57,9 +57,8 @@ infra-ansible/playbooks/webserver_s2.yml
 
 | Catégorie attendue       | Fichier ou template associé                                                                      | Statut    |
 |--------------------------|--------------------------------------------------------------------------------------------------|-----------|
-| VMs                      | [`vm-template.yml`](../../docs/golden_path/vm-template.yml)                                      | [A CREER] |
-| Rules / Firewall         | [`firewall-rule-template.yml`](../../docs/golden_path/firewall-rule-template.yml)                | [A CREER] |
-| IPAM / NetBox            | [`ipam-site-template.yml`](../../docs/golden_path/ipam-site-template.yml)                        | [A CREER] |
+| VMs                      | [`vm-template.yml`](./vm-template.yml)                                                           |           |
+| IPAM / NetBox            | [`netbox_populate_template.yml`](./netbox_populate_template.yml)                                 | Présent   |
 | Logs / Fluent Bit        | [`fluent-bit.conf.j2`](../../infra-ansible/roles/fluentbit/templates/fluent-bit.conf.j2)         | Présent   |
 | Logs / Filebeat          | [`filebeat.yml.j2`](../../infra-ansible/roles/webserver/templates/filebeat.yml.j2)               | Présent   |
 | Logs / Rsyslog Bastion   | [`rsyslog-bastion.conf.j2`](../../infra-ansible/roles/bastion/templates/rsyslog-bastion.conf.j2) | Présent   |

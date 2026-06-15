@@ -2,7 +2,7 @@
 
 ### 1. Définir la segmentation réseau du troisième site
 
-Créer trois sous-réseaux distincts pour le site 3, en conservant la même logique que les sites existants(cf. [adressing_conventions.md](adressing-conventions.md))
+Créer trois sous-réseaux distincts pour le site x, en conservant la même logique que les sites existants(cf. [adressing_conventions.md](adressing-conventions.md))
 
 | Segment | Plage IP           | Usage                                                |
 |---------|--------------------|------------------------------------------------------|
@@ -20,7 +20,7 @@ Chaque équipement doit être configuré avec les VLANs ou interfaces correspond
 
 ### 3. Mettre en place le routage entre les sites
 
-Configurer le routage afin de permettre la communication entre le site 3 et les sites existants.
+Configurer le routage afin de permettre la communication entre le site x et les sites existants.
 
 Le routage doit permettre uniquement les échanges nécessaires entre les sites, par exemple l’accès aux services internes, aux outils d’administration ou aux ressources partagées.
 
@@ -32,26 +32,26 @@ Par défaut, les flux doivent être bloqués, puis uniquement les flux nécessai
 
 Exemples de règles :
 
-* Le LAN du site 3 peut accéder aux services internes autorisés.
+* Le LAN du site x peut accéder aux services internes autorisés.
 * La DMZ reste isolée du LAN sauf exception contrôlée.
 * Le réseau ADMIN est réservé aux accès d’administration et de supervision.
 * Les flux entre sites sont limités aux besoins métier.
 
-### 5. Intégrer le site 3 aux services d’infrastructure
+### 5. Intégrer le site x aux services d’infrastructure
 
-Configurer les services nécessaires au bon fonctionnement du site 3 : DNS, DHCP, annuaire, supervision, journalisation et sauvegarde si besoin.
+Configurer les services nécessaires au bon fonctionnement du site x : DNS, DHCP, annuaire, supervision, journalisation et sauvegarde si besoin.
 
-Cette étape permet aux postes utilisateurs et aux serveurs du site 3 d’utiliser les mêmes services centraux que les autres sites.
+Cette étape permet aux postes utilisateurs et aux serveurs du site x d’utiliser les mêmes services centraux que les autres sites.
 
 ### 6. Déployer les services dans la DMZ si nécessaire
 
-Installer ou raccorder les services exposés du site 3 dans le segment DMZ.
+Installer ou raccorder les services exposés du site x dans le segment DMZ.
 
 La DMZ peut accueillir un bastion, un reverse proxy ou des services devant être accessibles depuis d’autres réseaux, tout en restant séparée du LAN et du réseau ADMIN.
 
 ### 7. Intégrer le réseau ADMIN à la supervision
 
-Ajouter les équipements et serveurs du site 3 aux outils de supervision et de management.
+Ajouter les équipements et serveurs du site x aux outils de supervision et de management.
 
 Cela permet de surveiller l’état du réseau, la disponibilité des services, les performances et les éventuelles alertes de sécurité.
 
@@ -72,9 +72,9 @@ Les tests doivent inclure :
 
 Contrôler que les flux non autorisés sont bien bloqués.
 
-Cette étape permet de vérifier que le cloisonnement entre LAN, DMZ et ADMIN est respecté, et que le site 3 ne crée pas de faille dans l’architecture existante.
+Cette étape permet de vérifier que le cloisonnement entre LAN, DMZ et ADMIN est respecté, et que le site x ne crée pas de faille dans l’architecture existante.
 
-### 10. Documenter l’intégration du site 3
+### 10. Documenter l’intégration du site x
 
 Mettre à jour la documentation réseau avec les nouvelles plages IP, les règles de pare-feu, les équipements ajoutés et les services configurés.
 
