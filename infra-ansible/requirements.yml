@@ -1,0 +1,5 @@
+collections:
+  - name: community.postgresql
+  - name: community.hashi_vault
+  - name: pfsensible.core
+  - name: netbox.netbox

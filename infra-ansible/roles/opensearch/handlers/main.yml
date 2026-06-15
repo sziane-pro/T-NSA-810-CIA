@@ -1,0 +1,18 @@
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart opensearch
+  ansible.builtin.systemd:
+    name: opensearch
+    state: restarted
+  listen: restart opensearch
+
+- name: wait for opensearch after restart
+  ansible.builtin.wait_for:
+    host: "{{ opensearch_listen_address }}"
+    port: 9200
+    delay: 10
+    timeout: 180
+    state: started
+  listen: restart opensearch
