@@ -1,12 +1,5 @@
----
 opensearch_listen_address: 192.168.10.101
-opensearch_admin_password: >-
-  {{
-    lookup(
-      'community.hashi_vault.hashi_vault',
-      'secret/data/netbox:opensearch_admin_password'
-    )
-  }}
+opensearch_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:opensearch_admin_password') }}"
 opensearch_heap_size: "512m"
 
 netbox_listen_address: 192.168.10.101
