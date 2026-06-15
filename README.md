@@ -30,12 +30,12 @@ make vpn       # PKI + OpenVPN site-a-site
 
 ## Documentation
 
-| Fichier | Contenu |
-|---------|---------|
-| [Architecture-Documentation.md](Architecture-Documentation.md) | Architecture reseau detaillee des deux sites |
+| Fichier                                                        | Contenu                                             |
+|----------------------------------------------------------------|-----------------------------------------------------|
+| [Architecture-Documentation.md](architecture-documentation.md) | Architecture reseau detaillee des deux sites        |
 | [infa-ansible/DOCUMENTATION.md](infa-ansible/DOCUMENTATION.md) | Reference Ansible : structure, variables, commandes |
-| [infa-ansible/SERVICES.md](infa-ansible/SERVICES.md) | Catalogue des services deployes et acces |
-| [docs/onboarding.md](docs/onboarding.md) | Guide de prise de poste pas a pas |
+| [infa-ansible/SERVICES.md](infa-ansible/SERVICES.md)           | Catalogue des services deployes et acces            |
+| [docs/onboarding.md](docs/onboarding.md)                       | Guide de prise de poste pas a pas                   |
 
 ## Structure du depot
 
