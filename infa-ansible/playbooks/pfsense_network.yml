@@ -1,5 +1,0 @@
-- hosts: firewall
-  gather_facts: false
-
-  roles: 
-    - pfsense_network

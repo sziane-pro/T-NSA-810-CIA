@@ -1,0 +1,13 @@
+# Création du VLAN 10
+- name: Create VLAN 10
+  pfsensible.core.pfsense_vlan:
+    interface: "{{ trunk_interface }}"
+    vlan_id: "{{ Lan_vlan }}"
+    descr: LAN
+
+# Création du VLAN 30
+- name: Create VLAN 30
+  pfsensible.core.pfsense_vlan:
+    interface: "{{ trunk_interface }}"
+    vlan_id: "{{ admin_vlan }}"
+    descr: ADMIN

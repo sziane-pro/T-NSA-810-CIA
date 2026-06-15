@@ -1,9 +1,9 @@
 # Clés privées PKI - ne jamais commiter
-infa-ansible/pki/
+infra-ansible/pki/
 *.key
 
 # Secrets locaux - ne jamais commiter
-infa-ansible/.env
+infra-ansible/.env
 *.tar.gz
 *.snap
 
