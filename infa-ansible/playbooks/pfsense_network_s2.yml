@@ -1,0 +1,7 @@
+---
+- name: Configure pfSense Site 2 (rules + NAT)
+  hosts: firewall_s2
+  gather_facts: false
+
+  roles:
+    - pfsense_network_s2

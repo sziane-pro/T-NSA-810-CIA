@@ -1,0 +1,18 @@
+[site2]
+bastion_vm   ansible_host=5.39.122.40 ansible_port=2231
+webserver_vm ansible_host=5.39.122.40 ansible_port=2232
+
+[firewall_s2]
+pfsense_s2 ansible_host=5.39.122.40 ansible_port=22
+
+[firewall_s2:vars]
+ansible_user=admin
+ansible_python_interpreter=/usr/local/bin/python3.11
+ansible_ssh_private_key_file=~/.ssh/ansible_key
+ansible_ssh_extra_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+
+[site2:vars]
+ansible_user=t-nsa-810-cia
+ansible_ssh_private_key_file=~/.ssh/ansible_key
+ansible_become=true
+ansible_become_method=sudo

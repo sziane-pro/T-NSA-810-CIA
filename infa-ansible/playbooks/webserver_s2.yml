@@ -1,0 +1,12 @@
+---
+- name: Configure WebServer Site 2 (Nginx + Filebeat)
+  hosts: webserver_vm
+  gather_facts: true
+
+  vars_prompt:
+    - name: opensearch_password
+      prompt: "Mot de passe OpenSearch (admin)"
+      private: true
+
+  roles:
+    - webserver

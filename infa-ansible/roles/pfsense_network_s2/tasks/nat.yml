@@ -1,0 +1,25 @@
+# ============================================================
+# NAT Port Forward — WAN → VMs internes
+# Port 2231 → Bastion SSH (22)
+# Port 2232 → WebServer SSH (22)
+# ============================================================
+
+- name: NAT port forward 2231 to Bastion SSH
+  pfsensible.core.pfsense_nat_port_forward:
+    descr: "NAT SSH Bastion (2231)"
+    interface: WAN
+    protocol: tcp
+    source: any
+    destination: "(self):{{ bastion_nat_port }}"
+    target: "{{ bastion_ip }}:22"
+    state: present
+
+- name: NAT port forward 2232 to WebServer SSH
+  pfsensible.core.pfsense_nat_port_forward:
+    descr: "NAT SSH WebServer (2232)"
+    interface: WAN
+    protocol: tcp
+    source: any
+    destination: "(self):{{ webserver_nat_port }}"
+    target: "{{ webserver_ip }}:22"
+    state: present

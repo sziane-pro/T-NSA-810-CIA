@@ -1,0 +1,63 @@
+---
+# ============================================================
+# Nginx — Serveur web interne Site 2
+# ============================================================
+
+- name: Ensure Nginx is installed
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+- name: Deploy Nginx main configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/nginx -t -c %s
+  notify: reload nginx
+
+- name: Deploy Nginx site configuration
+  ansible.builtin.template:
+    src: default.conf.j2
+    dest: /etc/nginx/sites-available/site2
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: Enable site2 vhost
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/site2
+    dest: /etc/nginx/sites-enabled/site2
+    state: link
+  notify: reload nginx
+
+- name: Disable default Nginx vhost
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Ensure webroot directory exists
+  ansible.builtin.file:
+    path: /var/www/site2
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: "0755"
+
+- name: Deploy index page
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: /var/www/site2/index.html
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+- name: Ensure Nginx is enabled and started
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
