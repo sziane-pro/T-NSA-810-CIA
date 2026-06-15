@@ -8,3 +8,5 @@ webserver_port: 80
 # OpenSearch Site 1 (pour envoi logs Filebeat)
 opensearch_host: 192.168.10.101
 opensearch_port: 9200
+
+ansible_become_pass: "{{ lookup('env', 'WEBSERVER_VM_SUDO_PASS') }}"
