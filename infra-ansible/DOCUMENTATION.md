@@ -334,13 +334,13 @@ sudo netplan try     # Tester avec retour automatique si non confirme
 
 ## Problemes connus et solutions
 
-| Probleme | Cause | Solution |
-|----------|-------|----------|
-| Role not found | ansible.cfg non lu (WSL world-writable) | ANSIBLE_CONFIG force via Makefile |
-| Python not found sur pfSense | pfSense = FreeBSD | ansible_python_interpreter: /usr/local/bin/python3.11 |
-| Vault connection refused | VAULT_ADDR pointe sur localhost sans tunnel | Ouvrir tunnel SSH ou utiliser make lan |
-| Vault sealed apres restart | Comportement normal de Vault | vault operator unseal avec la cle de init.json |
-| Certificate format error pfSense | EasyRSA ajoute du texte lisible avant le PEM | Extraire avec openssl x509 -in ... > ...-clean.crt |
-| Key values mismatch OpenVPN | Cert et cle regeneres separement | Supprimer /opt/easy-rsa/pki et infra-ansible/pki/ puis relancer make vpn |
-| CSRF 403 NetBox | Django rejette les origines non declarees | Ajouter CSRF_TRUSTED_ORIGINS dans configuration.py.j2 |
-| hvac module manquant | Dependance Python non installee | make install |
+| Probleme                         | Cause                                        | Solution                                                                 |
+|----------------------------------|----------------------------------------------|--------------------------------------------------------------------------|
+| Role not found                   | ansible.cfg non lu (WSL world-writable)      | ANSIBLE_CONFIG force via Makefile                                        |
+| Python not found sur pfSense     | pfSense = FreeBSD                            | ansible_python_interpreter: /usr/local/bin/python3.11                    |
+| Vault connection refused         | VAULT_ADDR pointe sur localhost sans tunnel  | Ouvrir tunnel SSH ou utiliser make lan                                   |
+| Vault sealed apres restart       | Comportement normal de Vault                 | vault operator unseal avec la cle de init.json                           |
+| Certificate format error pfSense | EasyRSA ajoute du texte lisible avant le PEM | Extraire avec openssl x509 -in ... > ...-clean.crt                       |
+| Key values mismatch OpenVPN      | Cert et cle regeneres separement             | Supprimer /opt/easy-rsa/pki et infra-ansible/pki/ puis relancer make vpn |
+| CSRF 403 NetBox                  | Django rejette les origines non declarees    | Ajouter CSRF_TRUSTED_ORIGINS dans configuration.py.j2                    |
+| hvac module manquant             | Dependance Python non installee              | make install                                                             |
