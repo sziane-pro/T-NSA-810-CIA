@@ -1,6 +1,6 @@
+---
 name: CI/CD - Infrastructure Validation
-
-on:
+"on":
   push:
     branches:
       - test-ci
@@ -10,11 +10,11 @@ workflow_dispatch:
 
 jobs:
   yaml-lint:
-    name : YML lint
+    name: YML lint
     runs-on: ubuntu
     steps:
       - name: Install yamllint
-        run: | 
+        run: |
           sudo apt-get update
           sudo apt-get install -y yamllint
       - name: Run yamllint

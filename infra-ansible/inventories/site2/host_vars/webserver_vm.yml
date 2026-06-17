@@ -1,3 +1,4 @@
+---
 # Variables spécifiques au WebServer (192.168.110.100 - VLAN LAN 110)
 webserver_listen_address: 192.168.110.100
 

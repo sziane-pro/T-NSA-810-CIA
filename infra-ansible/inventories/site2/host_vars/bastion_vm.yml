@@ -1,3 +1,4 @@
+---
 # Variables spécifiques au Bastion (192.168.120.10 - VLAN DMZ 120)
 bastion_listen_address: 192.168.120.10
 
