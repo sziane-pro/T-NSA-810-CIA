@@ -9,6 +9,7 @@
 # Play 2 : Configure OpenVPN + Kill Switch sur pfSense
 - name: Configure OpenVPN server on pfSense
   hosts: firewall
-  roles:
-    - role: pfsense_network
-      tasks_from: vpn
+  tasks:
+    - import_role: 
+        name: pfsense_network
+        tasks_from: vpn

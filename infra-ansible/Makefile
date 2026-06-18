@@ -9,11 +9,11 @@ export
 SITE1_INVENTORY := inventories/site1
 SITE2_INVENTORY := inventories/site2
 
-LAN_VM_PORT      ?= 2221
-ADMIN_VM_PORT    ?= 2222
+LAN_VM_PORT      ?= 2224
+ADMIN_VM_PORT    ?= 2223
 
-BASTION_PORT     ?= 2231
-WEBSERVER_PORT   ?= 2232
+BASTION_PORT     ?= 2233
+WEBSERVER_PORT   ?= 2234
 S2_GATEWAY_HOST  ?= 5.39.122.40
 S2_GATEWAY_USER  ?= t-nsa-810-cia
 
@@ -23,7 +23,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-bastion site2-webserver site2-all \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-all \
         site2-check site2-pfsense-check site2-bastion-check site2-webserver-check \
         ping ping-s2
 
@@ -55,7 +55,8 @@ help:
 	@echo "  make site2-pfsense       - Configure pfSense Site 2 (regles + NAT)"
 	@echo "  make site2-pfsense-rules - Regles firewall Site 2 uniquement"
 	@echo "  make site2-pfsense-nat   - NAT Site 2 uniquement"
-	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (necessite site1-vpn fait)"
+	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (relance aussi la PKI Site 1)"
+	@echo "  make site2-vpn-client    - Configure le client VPN Site 2 uniquement (ne touche pas au Site 1)"
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo "  make site2-webserver      - Configure le WebServer Site 2 (Nginx + Filebeat vers OpenSearch)"
 	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver)"
@@ -90,6 +91,9 @@ site1-pfsense:
 
 site1-pfsense-rules:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags rules
+
+site1-pfsense-nat:
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags nat
 
 site1-pfsense-vpn:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags vpn
@@ -168,6 +172,9 @@ site2-vpn:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
 
+site2-vpn-client:
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
+
 site2-bastion:
 	@echo ">>> Mot de passe sudo de bastion_vm :"
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --ask-become-pass
@@ -242,7 +249,7 @@ ping-s2:
 # --- Connexions SSH Site 1 ---
 
 ssh-pfsense:
-	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no $(GATEWAY_USER)@$(GATEWAY_HOST)
+	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no admin@$(GATEWAY_HOST)
 
 ssh-lan:
 	ssh -p $(LAN_VM_PORT) -i $(SSH_KEY) -o StrictHostKeyChecking=no sysadmin@$(GATEWAY_HOST)

@@ -38,6 +38,9 @@
     cert: "vpn-client-site2"
     data_ciphers: "AES-256-GCM"
     data_ciphers_fallback: "AES-256-GCM"
+    # Compression desactivee (doit etre identique cote serveur Site 1)
+    # "" = Omit Preference ; evite le mismatch LZO ("Bad LZO decompression header")
+    compression: ""
     state: present
 
 # ============================================================
