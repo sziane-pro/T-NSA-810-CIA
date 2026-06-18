@@ -96,7 +96,16 @@ site1-pfsense-nat:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags nat
 
 site1-pfsense-vpn:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags vpn
+	@rm -f ~/.ansible/cp/* 2>/dev/null || true
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@read -p "Token Vault (root) : " vault_token; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags vpn; \
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vault:
 	@echo ">>> Mot de passe sudo de admin_vm :"
@@ -114,8 +123,17 @@ site1-lan:
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vpn:
-	@echo ">>> Mot de passe sudo de admin_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
+	@rm -f ~/.ansible/cp/* 2>/dev/null || true
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@echo ">>> Token Vault (root) puis mot de passe sudo de admin_vm :"
+	@read -p "Token Vault (root) : " vault_token; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass; \
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-pki:
 	@echo ">>> Mot de passe sudo de admin_vm :"
@@ -169,11 +187,30 @@ site2-pfsense-nat:
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags nat
 
 site2-vpn:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
+	@rm -f ~/.ansible/cp/* 2>/dev/null || true
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@echo ">>> Token Vault (root) puis mot de passe sudo de admin_vm :"
+	@read -p "Token Vault (root) : " vault_token; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-vpn-client:
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
+	@rm -f ~/.ansible/cp/* 2>/dev/null || true
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@read -p "Token Vault (root) : " vault_token; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-bastion:
 	@echo ">>> Mot de passe sudo de bastion_vm :"
