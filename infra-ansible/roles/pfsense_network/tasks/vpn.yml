@@ -1,10 +1,21 @@
+# --- Lecture de la PKI depuis Vault (source de verite) ---
+# Le lookup s'execute sur le controller : VAULT_ADDR/VAULT_TOKEN doivent etre
+# dans l'environnement + tunnel SSH vers Vault ouvert (gere par le Makefile).
+
+- name: Load PKI material from Vault
+  ansible.builtin.set_fact:
+    vault_ca_crt: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:ca_crt', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+    vault_server_crt: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:vpn_server_crt', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+    vault_server_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:vpn_server_key', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+  no_log: true
+
 # --- Import PKI dans pfSense ---
 
 - name: Import CA into pfSense
   pfsensible.core.pfsense_ca:
     name: "VPN-CA"
     method: existing
-    certificate: "{{ lookup('file', playbook_dir + '/../pki/ca.crt') | b64encode }}"
+    certificate: "{{ vault_ca_crt | b64encode }}"
     state: present
 
 - name: Import server certificate into pfSense
@@ -12,8 +23,8 @@
     name: "vpn-server-site1"
     ca: "VPN-CA"
     method: import
-    certificate: "{{ lookup('file', playbook_dir + '/../pki/vpn-server.crt') | b64encode }}"
-    key: "{{ lookup('file', playbook_dir + '/../pki/vpn-server.key') | b64encode }}"
+    certificate: "{{ vault_server_crt | b64encode }}"
+    key: "{{ vault_server_key | b64encode }}"
     state: present
 
 # --- Configuration serveur OpenVPN ---
@@ -27,10 +38,15 @@
     local_port: 1194
     tunnel_network: "{{ vpn_tunnel_network }}"
     local_network: "{{ lan_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24,{{ admin_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24"
+    # Reseaux du Site 2 : indispensable pour la route RETOUR (sinon ping LAN<->LAN = 100% loss)
+    remote_network: "{{ vpn_site2_lan }},{{ vpn_site2_admin }}"
     ca: "VPN-CA"
     cert: "vpn-server-site1"
     data_ciphers: "AES-256-GCM"
     data_ciphers_fallback: "AES-256-GCM"
+    # Compression desactivee (doit etre identique cote client Site 2)
+    # "" = Omit Preference ; evite le mismatch LZO ("Bad LZO decompression header")
+    compression: ""
     state: present
 
 # --- Règles firewall VPN ---

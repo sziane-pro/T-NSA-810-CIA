@@ -1,14 +1,22 @@
 # ============================================================
 # Import PKI client dans pfSense-S2
-# Les fichiers sont récupérés depuis le dossier pki/ local
-# généré par make site1-vpn
+# La PKI est lue depuis Vault (source de verite, generee par le
+# role pki sur admin_vm). Le lookup s'execute sur le controller :
+# VAULT_ADDR/VAULT_TOKEN dans l'env + tunnel Vault (gere par le Makefile).
 # ============================================================
+
+- name: Load PKI material from Vault
+  ansible.builtin.set_fact:
+    vault_ca_crt: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:ca_crt', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+    vault_client_crt: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:vpn_client_site2_crt', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+    vault_client_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/pki:vpn_client_site2_key', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}"
+  no_log: true
 
 - name: Import CA into pfSense S2
   pfsensible.core.pfsense_ca:
     name: "VPN-CA"
     method: existing
-    certificate: "{{ lookup('file', playbook_dir + '/../pki/ca.crt') | b64encode }}"
+    certificate: "{{ vault_ca_crt | b64encode }}"
     state: present
 
 - name: Import client certificate into pfSense S2
@@ -16,8 +24,8 @@
     name: "vpn-client-site2"
     ca: "VPN-CA"
     method: import
-    certificate: "{{ lookup('file', playbook_dir + '/../pki/vpn-client-site2.crt') | b64encode }}"
-    key: "{{ lookup('file', playbook_dir + '/../pki/vpn-client-site2.key') | b64encode }}"
+    certificate: "{{ vault_client_crt | b64encode }}"
+    key: "{{ vault_client_key | b64encode }}"
     state: present
 
 # ============================================================
@@ -38,6 +46,9 @@
     cert: "vpn-client-site2"
     data_ciphers: "AES-256-GCM"
     data_ciphers_fallback: "AES-256-GCM"
+    # Compression desactivee (doit etre identique cote serveur Site 1)
+    # "" = Omit Preference ; evite le mismatch LZO ("Bad LZO decompression header")
+    compression: ""
     state: present
 
 # ============================================================

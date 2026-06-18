@@ -50,6 +50,7 @@
     - opensearch-cross-cluster-replication
     - opensearch-ml
     - opensearch-knn
+    - opensearch-observability
 
 - name: Fix ownership on OpenSearch directories
   ansible.builtin.file:
