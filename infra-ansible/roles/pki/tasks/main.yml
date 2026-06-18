@@ -10,121 +10,171 @@
     state: directory
     mode: '0700'
 
-- name: Init PKI
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa init-pki
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki
-  environment:
-    EASYRSA_BATCH: "1"
+# ============================================================
+# Idempotence : la PKI est-elle deja stockee dans Vault ?
+# Vault est l'unique source de verite. Si le secret existe,
+# on ne regenere RIEN (evite tout mismatch cle/cert).
+# ============================================================
+- name: Read Vault root token from init file
+  ansible.builtin.slurp:
+    src: /etc/vault.d/init.json
+  register: vault_init_raw
+  no_log: true
 
-- name: Build CA
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa build-ca nopass
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/ca.crt
-  environment:
-    EASYRSA_BATCH: "1"
+- name: Set Vault token fact
+  ansible.builtin.set_fact:
+    vault_root_token: "{{ (vault_init_raw.content | b64decode | from_json).root_token }}"
+  no_log: true
 
-- name: Generate server certificate request
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-server nopass
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/private/vpn-server.key
-  environment:
-    EASYRSA_BATCH: "1"
+- name: Check if PKI already exists in Vault
+  ansible.builtin.uri:
+    url: "https://{{ vault_listen_address }}:8200/v1/secret/data/pki"
+    method: GET
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    validate_certs: false
+    status_code: [200, 404]
+  register: vault_pki_check
+  no_log: true
 
-- name: Sign server certificate
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req server vpn-server
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/issued/vpn-server.crt
-  environment:
-    EASYRSA_BATCH: "1"
+- name: Set pki_in_vault fact
+  ansible.builtin.set_fact:
+    pki_in_vault: "{{ vault_pki_check.status == 200 }}"
 
-- name: Generate client certificate request for Site 2
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-client-site2 nopass
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/private/vpn-client-site2.key
-  environment:
-    EASYRSA_BATCH: "1"
+- name: PKI already present in Vault — skipping generation
+  ansible.builtin.debug:
+    msg: "PKI deja presente dans Vault (secret/pki) : generation ignoree (idempotent)."
+  when: pki_in_vault
 
-- name: Sign client certificate for Site 2
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req client vpn-client-site2
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/issued/vpn-client-site2.crt
-  environment:
-    EASYRSA_BATCH: "1"
+# ============================================================
+# Generation + stockage dans Vault (uniquement si absente)
+# ============================================================
+- name: Generate PKI and push it to Vault
+  when: not pki_in_vault
+  block:
+    # Repart d'un etat propre pour garantir une PKI 100% coherente
+    - name: Wipe any stale local PKI
+      ansible.builtin.file:
+        path: /opt/easy-rsa/pki
+        state: absent
 
-- name: Generate Diffie-Hellman parameters
-  ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-dh
-  args:
-    chdir: /opt/easy-rsa
-    creates: /opt/easy-rsa/pki/dh.pem
-  environment:
-    EASYRSA_BATCH: "1"
+    - name: Init PKI
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa init-pki
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-# Extraction PEM pur (les fichiers EasyRSA contiennent du texte lisible en plus)
-- name: Extract clean PEM from CA certificate
-  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/ca.crt > /opt/easy-rsa/pki/ca-clean.crt
-  args:
-    creates: /opt/easy-rsa/pki/ca-clean.crt
+    - name: Build CA
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa build-ca nopass
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Extract clean PEM from server certificate
-  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-server.crt > /opt/easy-rsa/pki/issued/vpn-server-clean.crt
-  args:
-    creates: /opt/easy-rsa/pki/issued/vpn-server-clean.crt
+    - name: Generate server certificate request
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-server nopass
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Extract clean PEM from client certificate
-  ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-client-site2.crt > /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
-  args:
-    creates: /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
+    - name: Sign server certificate
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req server vpn-server
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Fetch CA certificate to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/ca-clean.crt
-    dest: "{{ playbook_dir }}/../pki/ca.crt"
-    flat: true
+    - name: Generate client certificate request for Site 2
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-req vpn-client-site2 nopass
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Fetch server certificate to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/issued/vpn-server-clean.crt
-    dest: "{{ playbook_dir }}/../pki/vpn-server.crt"
-    flat: true
+    - name: Sign client certificate for Site 2
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa sign-req client vpn-client-site2
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Fetch server private key to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/private/vpn-server.key
-    dest: "{{ playbook_dir }}/../pki/vpn-server.key"
-    flat: true
+    - name: Generate Diffie-Hellman parameters
+      ansible.builtin.command: /usr/share/easy-rsa/easyrsa gen-dh
+      args:
+        chdir: /opt/easy-rsa
+      environment:
+        EASYRSA_BATCH: "1"
 
-- name: Fetch client certificate to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
-    dest: "{{ playbook_dir }}/../pki/vpn-client-site2.crt"
-    flat: true
+    # Extraction PEM pur (les fichiers EasyRSA contiennent du texte en plus)
+    - name: Extract clean PEM from CA certificate
+      ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/ca.crt > /opt/easy-rsa/pki/ca-clean.crt
 
-- name: Fetch client private key to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/private/vpn-client-site2.key
-    dest: "{{ playbook_dir }}/../pki/vpn-client-site2.key"
-    flat: true
+    - name: Extract clean PEM from server certificate
+      ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-server.crt > /opt/easy-rsa/pki/issued/vpn-server-clean.crt
 
-- name: Fetch DH parameters to controller
-  ansible.builtin.fetch:
-    src: /opt/easy-rsa/pki/dh.pem
-    dest: "{{ playbook_dir }}/../pki/dh.pem"
-    flat: true
+    - name: Extract clean PEM from client certificate
+      ansible.builtin.shell: openssl x509 -in /opt/easy-rsa/pki/issued/vpn-client-site2.crt > /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt
 
-# Sécurité : supprimer les clés privées de la VM après récupération
-- name: Remove CA private key from VM
-  ansible.builtin.file:
-    path: /opt/easy-rsa/pki/private/ca.key
-    state: absent
+    # Lecture des fichiers generes (sur la VM)
+    - name: Read CA certificate
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/ca-clean.crt }
+      register: f_ca_crt
+      no_log: true
+    - name: Read CA private key
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/private/ca.key }
+      register: f_ca_key
+      no_log: true
+    - name: Read server certificate
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/issued/vpn-server-clean.crt }
+      register: f_server_crt
+      no_log: true
+    - name: Read server private key
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/private/vpn-server.key }
+      register: f_server_key
+      no_log: true
+    - name: Read client certificate
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/issued/vpn-client-site2-clean.crt }
+      register: f_client_crt
+      no_log: true
+    - name: Read client private key
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/private/vpn-client-site2.key }
+      register: f_client_key
+      no_log: true
+    - name: Read DH parameters
+      ansible.builtin.slurp: { src: /opt/easy-rsa/pki/dh.pem }
+      register: f_dh
+      no_log: true
 
-- name: Remove server private key from VM
-  ansible.builtin.file:
-    path: /opt/easy-rsa/pki/private/vpn-server.key
-    state: absent
+    # Stockage de toute la PKI dans Vault (KV v2 : secret/pki)
+    - name: Store PKI in Vault
+      ansible.builtin.uri:
+        url: "https://{{ vault_listen_address }}:8200/v1/secret/data/pki"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_root_token }}"
+        body_format: json
+        body:
+          data:
+            ca_crt: "{{ f_ca_crt.content | b64decode }}"
+            ca_key: "{{ f_ca_key.content | b64decode }}"
+            vpn_server_crt: "{{ f_server_crt.content | b64decode }}"
+            vpn_server_key: "{{ f_server_key.content | b64decode }}"
+            vpn_client_site2_crt: "{{ f_client_crt.content | b64decode }}"
+            vpn_client_site2_key: "{{ f_client_key.content | b64decode }}"
+            dh_pem: "{{ f_dh.content | b64decode }}"
+        validate_certs: false
+        status_code: 200
+      no_log: true
+
+    # Securite : les cles privees ne doivent plus exister en clair sur le disque.
+    # Vault est desormais la seule source de verite.
+    - name: Remove private keys from VM disk
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /opt/easy-rsa/pki/private/ca.key
+        - /opt/easy-rsa/pki/private/vpn-server.key
+        - /opt/easy-rsa/pki/private/vpn-client-site2.key
