@@ -212,9 +212,6 @@ site2-vpn-client:
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
-site2-vpn-client:
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn
-
 site2-bastion:
 	@echo ">>> Mot de passe sudo de bastion_vm :"
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --ask-become-pass
