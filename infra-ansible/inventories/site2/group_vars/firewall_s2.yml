@@ -15,8 +15,8 @@ bastion_ip: 192.168.120.10
 webserver_ip: 192.168.110.100
 
 # NAT ports WAN → VMs internes
-bastion_nat_port: "2231"
-webserver_nat_port: "2232"
+bastion_nat_port: "2233"
+webserver_nat_port: "2234"
 
 # IPs externes autorisees
 epitetch_network_ip: "163.5.3.84"
