@@ -10,4 +10,4 @@ ssh_allowed_users: "t-nsa-810-cia"
 opensearch_host: 192.168.10.101
 opensearch_port: 9200
 
-ansible_become_pass: "{{ lookup('env', 'BASTION_VM_SUDO_PASS') }}"
+ansible_become_pass: '{{ bastion_sudo_pass }}'
