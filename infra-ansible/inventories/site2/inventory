@@ -1,6 +1,6 @@
 [site2]
-bastion_vm   ansible_host=5.39.122.40 ansible_port=2231
-webserver_vm ansible_host=5.39.122.40 ansible_port=2232
+bastion_vm   ansible_host=5.39.122.40 ansible_port=2233
+webserver_vm ansible_host=5.39.122.40 ansible_port=2234
 
 [firewall_s2]
 pfsense_s2 ansible_host=5.39.122.40 ansible_port=22

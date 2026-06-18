@@ -36,18 +36,6 @@
     destination_port: "22"
     state: present
 
-- name: NAT SSH to lan_vm
-  pfsensible.core.pfsense_rule:
-    name: "NAT LAN Vm1"
-    action: pass
-    interface: WAN
-    ipprotocol: inet
-    protocol: tcp
-    source: any
-    destination: "{{ lan_vm_ip }}"
-    destination_port: "22"
-    state: present
-
 - name: Reseau Epitech to admin_vm SSH
   pfsensible.core.pfsense_rule:
     name: "Reseau Epitech => Vm1"
@@ -56,18 +44,6 @@
     ipprotocol: inet
     protocol: tcp
     source: "{{ epitech_network_ip }}"
-    destination: "{{ admin_vm_ip }}"
-    destination_port: "22"
-    state: present
-
-- name: NAT SSH to admin_vm
-  pfsensible.core.pfsense_rule:
-    name: "NAT ADMIN Vm2"
-    action: pass
-    interface: WAN
-    ipprotocol: inet
-    protocol: tcp
-    source: any
     destination: "{{ admin_vm_ip }}"
     destination_port: "22"
     state: present

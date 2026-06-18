@@ -27,10 +27,15 @@
     local_port: 1194
     tunnel_network: "{{ vpn_tunnel_network }}"
     local_network: "{{ lan_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24,{{ admin_ip | regex_replace('/.*', '') | regex_replace('\\.[0-9]+$', '.0') }}/24"
+    # Reseaux du Site 2 : indispensable pour la route RETOUR (sinon ping LAN<->LAN = 100% loss)
+    remote_network: "{{ vpn_site2_lan }},{{ vpn_site2_admin }}"
     ca: "VPN-CA"
     cert: "vpn-server-site1"
     data_ciphers: "AES-256-GCM"
     data_ciphers_fallback: "AES-256-GCM"
+    # Compression desactivee (doit etre identique cote client Site 2)
+    # "" = Omit Preference ; evite le mismatch LZO ("Bad LZO decompression header")
+    compression: ""
     state: present
 
 # --- Règles firewall VPN ---

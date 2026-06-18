@@ -1,0 +1,25 @@
+# ============================================================
+# NAT Port Forward — WAN → VMs internes
+# Port 2221 → lan_vm SSH (22)
+# Port 2222 → admin_vm SSH (22)
+# ============================================================
+
+- name: NAT port forward 2221 to lan_vm SSH
+  pfsensible.core.pfsense_nat_port_forward:
+    descr: "NAT SSH lan_vm (2221)"
+    interface: WAN
+    protocol: tcp
+    source: any
+    destination: "(self):{{ lan_vm_nat_port }}"
+    target: "{{ lan_vm_ip }}:22"
+    state: present
+
+- name: NAT port forward 2222 to admin_vm SSH
+  pfsensible.core.pfsense_nat_port_forward:
+    descr: "NAT SSH admin_vm (2222)"
+    interface: WAN
+    protocol: tcp
+    source: any
+    destination: "(self):{{ admin_vm_nat_port }}"
+    target: "{{ admin_vm_ip }}:22"
+    state: present
