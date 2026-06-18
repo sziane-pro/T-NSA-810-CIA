@@ -20,7 +20,7 @@ sudo apt install ansible python3-pip -y
 
 ```bash
 git clone <url-du-depot>
-cd T-NSA-810-CIA/infa-ansible
+cd T-NSA-810-CIA/infra-ansible
 ```
 
 ---
@@ -151,15 +151,15 @@ vault operator unseal
 
 ```bash
 # Si tout est a reconstruire
-make pfsense   # pfSense : VLANs, interfaces, regles firewall
-make vault     # Vault sur admin_vm
-make lan       # OpenSearch + NetBox sur lan_vm
-make vpn       # PKI + OpenVPN
+make site1-pfsense   # pfSense : VLANs, interfaces, regles firewall
+make site1-vault     # Vault sur admin_vm
+make site1-lan       # OpenSearch + NetBox sur lan_vm
+make site1-vpn       # PKI + OpenVPN
 
 # Si seulement une partie est a redeployer
-make pfsense-rules   # Regles firewall uniquement
-make pfsense-vpn     # VPN pfSense uniquement
-make pki             # Regenerer la PKI uniquement
+make site1-pfsense-rules   # Regles firewall uniquement
+make site1-pfsense-vpn     # VPN pfSense uniquement
+make site1-pki             # Regenerer la PKI uniquement
 ```
 
 ---
@@ -212,7 +212,7 @@ Ces fichiers ne sont jamais dans git :
 
 | Fichier | Contenu |
 |---------|---------|
-| `infa-ansible/.env` | Tokens, adresses, cles de configuration locale |
-| `infa-ansible/pki/` | Certificats et cles privees VPN |
+| `infra-ansible/.env` | Tokens, adresses, cles de configuration locale |
+| `infra-ansible/pki/` | Certificats et cles privees VPN |
 | `vault-backup.tar.gz` | Sauvegarde des secrets Vault |
 | `*.key` | Toute cle privee |
