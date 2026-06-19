@@ -1,8 +1,28 @@
+
+- name: Ensure required dependencies are installed
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Add OpenSearch GPG key
+  ansible.builtin.apt_key:
+    url: https://artifacts.opensearch.org/publickeys/opensearch.pgp
+    state: present
+
+- name: Add OpenSearch APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://artifacts.opensearch.org/releases/bundle/opensearch-dashboards/2.x/apt stable main"
+    state: present
+    filename: opensearch-dashboards
+    update_cache: yes
+
 - name: Install OpenSearch Dashboards
   ansible.builtin.apt:
     name: "{{ opensearch_dashboards_package }}"
     state: present
-    update_cache: yes
 
 - name: Deploy the opensearch_dashboards.yml configuration
   ansible.builtin.template:

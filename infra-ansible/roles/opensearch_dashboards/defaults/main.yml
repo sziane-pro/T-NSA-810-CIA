@@ -9,8 +9,10 @@ opensearch_dashboards_port: 5601
 # Connexion vers le cluster OpenSearch (Site 1)
 opensearch_host: "192.168.10.101"
 opensearch_port: 9200
-opensearch_hosts: "https://{{ opensearch_host }}:{{ opensearch_port }}"
+opensearch_hosts: "http://{{ opensearch_host }}:{{ opensearch_port }}"
 
 # Identifiants (à surcharger via ton coffre de secrets ou Vault)
 opensearch_dashboards_user: "admin"
 opensearch_dashboards_password: "{{ opensearch_password }}"
+
+opensearch_ssl_verification: "none"
