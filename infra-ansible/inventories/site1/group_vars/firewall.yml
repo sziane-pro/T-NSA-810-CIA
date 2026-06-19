@@ -13,8 +13,8 @@ lan_vm_ip: 192.168.10.101
 admin_vm_ip: 192.168.30.101
 
 # NAT ports WAN → VMs internes
-lan_vm_nat_port: "2224"
-admin_vm_nat_port: "2223"
+lan_vm_nat_port: "2226"
+admin_vm_nat_port: "2225"
 
 # IPs externes autorisees
 epitech_network_ip: "163.5.3.84"

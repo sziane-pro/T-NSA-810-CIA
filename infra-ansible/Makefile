@@ -9,8 +9,8 @@ export
 SITE1_INVENTORY := inventories/site1
 SITE2_INVENTORY := inventories/site2
 
-LAN_VM_PORT      ?= 2224
-ADMIN_VM_PORT    ?= 2223
+LAN_VM_PORT      ?= 2226
+ADMIN_VM_PORT    ?= 2225
 
 BASTION_PORT     ?= 2235
 WEBSERVER_PORT   ?= 2236
