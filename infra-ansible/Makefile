@@ -108,8 +108,7 @@ site1-pfsense-vpn:
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vault:
-	@echo ">>> Mot de passe sudo de admin_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml --ask-become-pass
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml
 
 site1-lan:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
@@ -118,8 +117,7 @@ site1-lan:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	@echo ">>> Mot de passe sudo de lan_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml --ask-become-pass
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vpn:
@@ -130,14 +128,13 @@ site1-vpn:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	@echo ">>> Token Vault (root) puis mot de passe sudo de admin_vm :"
+	@echo ">>> Token Vault (root) :"
 	@read -p "Token Vault (root) : " vault_token; \
-	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml; \
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-pki:
-	@echo ">>> Mot de passe sudo de admin_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass --tags pki
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --tags pki
 
 site1-netbox-token:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
@@ -158,10 +155,8 @@ site1-filebeat:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	@echo ">>> Mot de passe sudo de lan_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --ask-become-pass --limit lan_vm
-	@echo ">>> Mot de passe sudo de admin_vm :"
-	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --ask-become-pass --limit admin_vm
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --limit lan_vm
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --limit admin_vm
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-netbox-populate:
@@ -194,9 +189,9 @@ site2-vpn:
 		-o StrictHostKeyChecking=no \
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
-	@echo ">>> Token Vault (root) puis mot de passe sudo de admin_vm :"
+	@echo ">>> Token Vault (root) :"
 	@read -p "Token Vault (root) : " vault_token; \
-	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --ask-become-pass; \
+	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
@@ -213,12 +208,10 @@ site2-vpn-client:
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-bastion:
-	@echo ">>> Mot de passe sudo de bastion_vm :"
-	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --ask-become-pass
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml
 
 site2-webserver:
-	@echo ">>> Mot de passe sudo de webserver_vm :"
-	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml --ask-become-pass
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml
 
 site2-all:
 	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver)"
@@ -235,10 +228,10 @@ site2-pfsense-check:
 	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --check --diff --skip-tags vpn
 
 site2-bastion-check:
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --check --diff --ask-become-pass
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml --check --diff
 
 site2-webserver-check:
-	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml --check --diff --ask-become-pass
+	ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml --check --diff
 
 # --- Global ---
 

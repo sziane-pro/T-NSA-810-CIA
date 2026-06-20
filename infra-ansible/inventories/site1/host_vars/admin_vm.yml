@@ -1,1 +1,2 @@
 vault_listen_address: 192.168.30.101
+ansible_become_pass: "{{ admin_vm_sudo_pass }}"

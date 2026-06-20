@@ -8,4 +8,4 @@ netbox_db_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data
 netbox_admin_password: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:admin_password') }}"
 netbox_secret_key: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:secret_key') }}"
 
-ansible_become_pass: "{{ lookup('env', 'LAN_VM_SUDO_PASS') }}"
+ansible_become_pass: "{{ lan_vm_sudo_pass }}"
