@@ -4,6 +4,7 @@ infra-ansible/pki/
 
 # Secrets locaux - ne jamais commiter
 infra-ansible/.env
+infra-ansible/.vault_pass
 *.tar.gz
 *.snap
 
