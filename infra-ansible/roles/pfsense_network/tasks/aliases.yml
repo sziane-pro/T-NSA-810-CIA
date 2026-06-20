@@ -1,0 +1,14 @@
+# ============================================================
+# Alias pfSense — IPs autorisees a joindre les VMs en SSH
+# Utilise comme "source" des port-forward NAT (nat.yml) pour
+# eviter l'exposition a Internet (source: any) et les brute-force bots.
+# Ajouter/retirer une IP = editer vm_ssh_allowed_ips dans les group_vars.
+# ============================================================
+
+- name: Create alias for SSH-allowed admin IPs
+  pfsensible.core.pfsense_alias:
+    name: "ssh_admin_allowed"
+    type: host
+    address: "{{ vm_ssh_allowed_ips | join(' ') }}"
+    descr: "IPs autorisees SSH vers les VMs internes"
+    state: present

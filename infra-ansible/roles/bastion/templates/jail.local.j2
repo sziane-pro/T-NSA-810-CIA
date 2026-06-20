@@ -4,7 +4,7 @@ bantime  = 3600
 findtime = 600
 maxretry = 3
 backend  = systemd
-ignoreip = 127.0.0.1/8 {{ vpn_tunnel_network }}
+ignoreip = 127.0.0.1/8 {{ vpn_tunnel_network }} {{ fail2ban_ignore_ips | default([]) | join(' ') }}
 
 [sshd]
 enabled  = true

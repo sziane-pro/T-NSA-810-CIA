@@ -13,12 +13,23 @@ lan_vm_ip: 192.168.10.101
 admin_vm_ip: 192.168.30.101
 
 # NAT ports WAN → VMs internes
-lan_vm_nat_port: "2226"
-admin_vm_nat_port: "2225"
+lan_vm_nat_port: "2221"
+admin_vm_nat_port: "2222"
 
 # IPs externes autorisees
 epitech_network_ip: "163.5.3.84"
 jaures_network_ip: "94.238.238.44"
+anthony_network_ip: "88.187.108.38"
+samy_network_ip: "90.49.150.217"
+anais_network_ip: "176.159.255.103"
+
+# IPs autorisees a joindre les VMs internes en SSH (source du NAT/regles)
+vm_ssh_allowed_ips:
+  - "{{ epitech_network_ip }}"
+  - "{{ jaures_network_ip }}"
+  - "{{ anthony_network_ip }}"
+  - "{{ samy_network_ip }}"
+  - "{{ anais_network_ip }}"
 
 # VPN Site-a-Site
 vpn_tunnel_network: "10.0.0.0/30"

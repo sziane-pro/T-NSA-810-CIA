@@ -1,25 +1,26 @@
 # ============================================================
 # NAT Port Forward — WAN → VMs internes
-# Port 2233 → Bastion SSH (22)
-# Port 2234 → WebServer SSH (22)
+# Port 2231 → Bastion SSH (22)
+# Port 2232 → WebServer SSH (22)
+# Source restreinte a l'alias ssh_admin_allowed (cree dans aliases.yml)
 # ============================================================
 
-- name: NAT port forward 2233 to Bastion SSH
+- name: NAT port forward 2231 to Bastion SSH
   pfsensible.core.pfsense_nat_port_forward:
-    descr: "NAT SSH Bastion (2233)"
+    descr: "NAT SSH Bastion (2231)"
     interface: WAN
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "(self):{{ bastion_nat_port }}"
     target: "{{ bastion_ip }}:22"
     state: present
 
-- name: NAT port forward 2234 to WebServer SSH
+- name: NAT port forward 2232 to WebServer SSH
   pfsensible.core.pfsense_nat_port_forward:
-    descr: "NAT SSH WebServer (2234)"
+    descr: "NAT SSH WebServer (2232)"
     interface: WAN
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "(self):{{ webserver_nat_port }}"
     target: "{{ webserver_ip }}:22"
     state: present

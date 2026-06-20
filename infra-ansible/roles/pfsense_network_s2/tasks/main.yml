@@ -1,3 +1,6 @@
+- import_tasks: aliases.yml
+  tags: [aliases, nat, rules]
+
 - import_tasks: rules.yml
   tags: rules
 
