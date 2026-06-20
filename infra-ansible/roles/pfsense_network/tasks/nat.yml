@@ -2,6 +2,7 @@
 # NAT Port Forward — WAN → VMs internes
 # Port 2221 → lan_vm SSH (22)
 # Port 2222 → admin_vm SSH (22)
+# Source restreinte a l'alias ssh_admin_allowed (cree dans aliases.yml)
 # ============================================================
 
 - name: NAT port forward 2221 to lan_vm SSH
@@ -9,7 +10,7 @@
     descr: "NAT SSH lan_vm (2221)"
     interface: WAN
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "(self):{{ lan_vm_nat_port }}"
     target: "{{ lan_vm_ip }}:22"
     state: present
@@ -19,7 +20,7 @@
     descr: "NAT SSH admin_vm (2222)"
     interface: WAN
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "(self):{{ admin_vm_nat_port }}"
     target: "{{ admin_vm_ip }}:22"
     state: present

@@ -4,6 +4,9 @@
 - import_tasks: interfaces.yml
   tags: interfaces
 
+- import_tasks: aliases.yml
+  tags: [aliases, nat, rules]
+
 - import_tasks: nat.yml
   tags: nat
 

@@ -85,7 +85,7 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "{{ bastion_ip }}"
     destination_port: "22"
     state: present
@@ -97,7 +97,7 @@
     interface: WAN
     ipprotocol: inet
     protocol: tcp
-    source: any
+    source: ssh_admin_allowed
     destination: "{{ webserver_ip }}"
     destination_port: "22"
     state: present

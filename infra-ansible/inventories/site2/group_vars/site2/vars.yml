@@ -2,3 +2,12 @@
 # Variables communes à toutes les VMs Site 2
 vpn_tunnel_network: "10.0.0.0/30"
 
+# IPs equipe a ne JAMAIS bannir par fail2ban (filet de securite).
+# A garder en phase avec vm_ssh_allowed_ips (group_vars/firewall_s2.yml).
+fail2ban_ignore_ips:
+  - "163.5.3.84"      # Epitech
+  - "90.49.150.217"   # Samy
+  - "176.159.255.103" # Anais
+  - "94.238.238.44"   # Jaures
+  - "88.187.108.38"   # Anthony
+
