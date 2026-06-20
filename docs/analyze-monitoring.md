@@ -2,17 +2,17 @@
 
 ## 1. Objectif
 
-Ce document présente la mise en place d’un système de monitoring avancé basé sur la collecte, le parsing, l’indexation, la visualisation et l’analyse des logs applicatifs.
+Ce document présente la mise en place d’un système de monitoring avancé basé sur la collecte, le parsing, l’indexation, la visualisation et l’analyse des logs.
 
 La solution mise en place permet de couvrir les éléments suivants :
 
-* collecte centralisée des logs applicatifs ;
-* parsing et structuration des logs ;
-* enrichissement des logs avec des métadonnées ;
+* collecte centralisée des logs systèmes et applicatifs ;
+* extraction et parsing des payloads JSON encapsulés ;
+* enrichissement des logs avec des métadonnées géographiques et systèmes ;
 * indexation des logs dans OpenSearch ;
 * création de dashboards dans OpenSearch Dashboards ;
 * configuration d’alertes sur les anomalies critiques ;
-* analyse et investigation des incidents applicatifs.
+* analyse et investigation des incidents.
 
 ---
 
@@ -25,7 +25,7 @@ La stack de monitoring repose sur les composants suivants :
 | Fluent Bit              | Collecte, parsing, enrichissement et transfert des logs     |
 | OpenSearch              | Stockage, indexation et recherche dans les logs             |
 | OpenSearch Dashboards   | Visualisation, dashboards, exploration des logs et alerting |
-| Application backend     | Génération des logs applicatifs                             |
+| Serveur Web / Backend   | Génération des logs                                         |
 
 ---
 
@@ -34,11 +34,11 @@ La stack de monitoring repose sur les composants suivants :
 L’architecture de monitoring est organisée autour d’une chaîne complète de traitement des logs.
 
 ```txt
-Application backend
+Serveur (auth.log, syslog, etc.)
    ↓
-Logs applicatifs
+Logs bruts (Texte + payload JSON)
    ↓
-Fluent Bit
+Fluent Bit (Filtre Regex + Decode JSON)
    ↓
 Parsing + enrichissement
    ↓
@@ -51,11 +51,11 @@ Dashboards / Alertes / Investigation
 
 Le rôle de chaque étape est le suivant :
 
-1. L’application génère des logs.
+1. Le serveur ou l’application génère des logs.
 2. Fluent Bit collecte les logs.
 3. Fluent Bit parse les logs pour extraire les champs importants.
 4. Fluent Bit enrichit les logs avec des métadonnées.
-5. Les logs sont envoyés vers OpenSearch.
+5. Les logs structurés sont envoyés vers OpenSearch.
 6. OpenSearch indexe les logs.
 7. OpenSearch Dashboards permet de visualiser les logs, créer des dashboards et configurer des alertes.
 
@@ -68,44 +68,28 @@ Fluent Bit est utilisé comme agent de collecte de logs.
 Il permet de :
 
 * récupérer les logs générés par l’application ;
-* lire les logs depuis des fichiers ou depuis la sortie standard des conteneurs ;
+* lire les logs depuis des fichiers ;
 * parser les logs structurés ;
 * ajouter des informations complémentaires ;
 * transférer les logs vers OpenSearch.
 
 ---
 
-## 5. Parsing des logs (A SUPPRIMER SI PAS DE PARSER DE LOGS)
+## 5. Parsing des logs
 
-Les logs applicatifs sont structurés afin d’être exploitables dans OpenSearch Dashboards.
-
-L’objectif du parsing est de transformer un log brut en document structuré avec des champs facilement filtrables.
-
-### Exemple de log applicatif
-
-```json
-{
-  "timestamp": "2026-06-17T10:15:30",
-  "level": "ERROR",
-  "endpoint": "/api/users",
-  "method": "GET",
-  "status": 500,
-  "message": "Database connection timeout",
-  "correlationId": "req-123456"
-}
-```
+Les logs collectés contiennent souvent un en-tête système suivi d'un payload JSON. L’objectif du parsing est d'isoler ce JSON pour transformer le log brut en un document structuré avec des champs facilement filtrables.
 
 ### Exemple de parser Fluent Bit
 
 ```ini
 [PARSER]
-    Name        app_json
-    Format      json
-    Time_Key    timestamp
-    Time_Format %Y-%m-%dT%H:%M:%S
+   Name         extract_syslog_json
+   Format       regex
+   Regex        ^(?<syslog_time>[^ ]+)\s+(?<syslog_host>[^ ]+)\s+(?<process>[^:]+):\s+(?<json_payload>\{.*\})$
+   Decode_Field json json_payload
 ```
 
-Ce parser permet à Fluent Bit d’interpréter les logs au format JSON et d’utiliser le champ `timestamp` comme date de référence.
+Ce parser permet à Fluent Bit de lire une ligne de log classique, d'isoler la partie json_payload, et de la décoder pour injecter les variables directement à la racine du document dans OpenSearch.
 
 ---
 
@@ -113,17 +97,17 @@ Ce parser permet à Fluent Bit d’interpréter les logs au format JSON et d’u
 
 Les logs envoyés dans OpenSearch contiennent plusieurs champs permettant l’analyse et la recherche.
 
-| Champ           | Description                                       |
-| --------------- | ------------------------------------------------- |
-| `timestamp`     | Date et heure du log                              |
-| `level`         | Niveau du log : INFO, WARN, ERROR                 |
-| `service`       | Service applicatif concerné                       |
-| `environment`   | Environnement concerné : dev, staging, production |
-| `endpoint`      | Route API appelée                                 |
-| `method`        | Méthode HTTP utilisée                             |
-| `status`        | Code HTTP retourné                                |
-| `message`       | Message du log                                    |
-| `correlationId` | Identifiant permettant de suivre une requête      |
+| Champ             | Description                                       |
+| ----------------- | ------------------------------------------------- |
+| `@timestamp`      | Date et heure du log                              |
+| `response`        | Code de statut HTTP retourné (ex: 200, 404, 500)  |
+| `url`             | Route API ou page web appelée                     |
+| `request`         | Méthode HTTP ou requête brute utilisée            |
+| `clientip`        | Adresse IP de l'utilisateur ou du client          |
+| `geo.coordinates` | Coordonnées géographiques déduites de l'IP        |
+| `machine.os`      | Système d'exploitation du client                  |
+| `bytes`           | Taille de la réponse renvoyée en octets           |
+| `_source_host`    | VM source ayant généré le log                     |
 
 Ces champs permettent de filtrer rapidement les logs dans OpenSearch Dashboards.
 
@@ -131,9 +115,9 @@ Ces champs permettent de filtrer rapidement les logs dans OpenSearch Dashboards.
 
 ## 7. Indexation dans OpenSearch
 
-Les logs collectés par Fluent Bit sont envoyés vers OpenSearch dans un index dédié.
+Les logs collectés par Fluent Bit sont envoyés vers OpenSearch dans un index dédié (ex: fluent-bit-*).
 
-L’indexation permet ensuite de rechercher, filtrer, agréger et visualiser les logs dans OpenSearch Dashboards.
+L’indexation permet ensuite de rechercher, filtrer, agréger et visualiser les données géographiques et systèmes dans OpenSearch Dashboards.
 
 ---
 
@@ -141,40 +125,34 @@ L’indexation permet ensuite de rechercher, filtrer, agréger et visualiser les
 
 OpenSearch Dashboards permet d’explorer les logs à l’aide de requêtes.
 
-### Rechercher toutes les erreurs applicatives
-
-```txt
-level: "ERROR"
-```
-
 ### Rechercher les erreurs HTTP 500
 
 ```txt
-status: 500
+response: 500
+```
+
+### Rechercher toute les erreurs côté client et serveur
+
+```txt
+response >= 400
 ```
 
 ### Rechercher les erreurs sur un endpoint précis
 
 ```txt
-endpoint: "/api/users" AND level: "ERROR"
+url: "/api/users" AND response >= 400
 ```
 
-### Suivre une requête avec un correlationId
+### Rechercher les requêtes provenant d'une IP spécifique
 
 ```txt
-correlationId: "req-123456"
+clientip: "192.168.1.1"
 ```
 
-### Rechercher les logs d’un service précis
+### Rechercher les logs provenant d'une machine spécifique
 
 ```txt
-service: "backend-api"
-```
-
-### Rechercher les logs d’un environnement précis
-
-```txt
-environment: "dev"
+_source_host: "webserver_vm"
 ```
 
 Ces requêtes facilitent l’analyse des incidents et permettent de réduire le temps de diagnostic.
@@ -183,33 +161,28 @@ Ces requêtes facilitent l’analyse des incidents et permettent de réduire le 
 
 ## 9. Dashboards
 
-Des dashboards sont créés dans OpenSearch Dashboards afin d’avoir une vision claire de l’état de l’application.
+Des dashboards sont créés dans OpenSearch Dashboards afin d’avoir une vision claire de l’état du trafic et de la santé des services.
 
-### Dashboard applicatif
+### Dashboard analytique
 
 Le dashboard applicatif permet de suivre les indicateurs suivants :
 
-* volume total de logs ;
-* nombre de logs par niveau ;
-* nombre d’erreurs dans le temps ;
-* répartition des codes HTTP ;
-* erreurs par endpoint ;
-* top des endpoints générant le plus d’erreurs ;
-* top des messages d’erreur ;
-* logs filtrés par service ;
-* logs filtrés par environnement.
+* volume total des requêtes ;
+* répartition des codes HTTP (response) ;
+* cartographie du trafic entrant (geo.coordinates) ;
+* répartition des systèmes d'exploitation et navigateurs (machine.os, agent) ;
+* top des endpoints générant le plus d’erreurs (url) ;
+* top des adresses IP clientes (clientip).
 
 ### Exemples de visualisations
 
-| Visualisation          | Objectif                                       |
-| ---------------------- | ---------------------------------------------- |
-| Logs par niveau        | Identifier une hausse d’erreurs ou de warnings |
-| Erreurs dans le temps  | Suivre l’évolution des incidents               |
-| Codes HTTP             | Visualiser la santé globale de l’API           |
-| Erreurs par endpoint   | Identifier les routes les plus instables       |
-| Top messages d’erreur  | Repérer les erreurs les plus fréquentes        |
-| Logs par service       | Comparer le comportement des services          |
-| Logs par environnement | Distinguer dev, staging et production          |
+| Visualisation          | Objectif                                             |
+| ---------------------- | ---------------------------------------------------- |
+| Metric Card (Erreurs)  | Identifier rapidement une hausse d’erreurs 500/400   |
+| Histogramme HTTP       | Visualiser la santé globale et le volume du trafic   |
+| Coordinate Map         | Afficher la provenance géographique des requêtes     |
+| Data Table (Endpoints) | Identifier les routes les plus instables ou visitées |
+| Pie Chart (OS/Agent)   | Analyser les habitudes des utilisateurs              |
 
 ### Captures d’écran à ajouter
 
@@ -240,38 +213,12 @@ Des alertes sont configurées dans OpenSearch Dashboards afin de détecter autom
 
 L’objectif est d’être notifié lorsqu’un comportement anormal est détecté, par exemple une hausse importante des erreurs applicatives ou des erreurs HTTP 500.
 
-### Alerte : taux d’erreurs élevé
-
-Condition surveillée :
-
-```txt
-level: "ERROR"
-```
-
-Seuil d’alerte :
-
-```txt
-Nombre d’erreurs > 10 sur 5 minutes
-```
-
-Niveau :
-
-```txt
-Critical
-```
-
-Objectif :
-
-Détecter rapidement une augmentation anormale des erreurs applicatives.
-
----
-
 ### Alerte : erreurs HTTP 500
 
 Condition surveillée :
 
 ```txt
-status: 500
+response: 500
 ```
 
 Seuil d’alerte :
@@ -292,18 +239,18 @@ Identifier les erreurs serveur susceptibles d’impacter les utilisateurs.
 
 ---
 
-### Alerte : endpoint instable
+### Alerte : endpoint instable ou scan de vulnérabilité
 
 Condition surveillée :
 
 ```txt
-endpoint: "/api/users" AND status >= 500
+response >= 400
 ```
 
 Seuil d’alerte :
 
 ```txt
-Nombre d’erreurs > 3 sur 10 minutes
+Nombre d’erreurs > 50 sur 10 minutes (provenant de la même IP)
 ```
 
 Niveau :
@@ -314,7 +261,7 @@ Warning
 
 Objectif :
 
-Identifier un endpoint instable ou en échec répété.
+Identifier un endpoint en échec répété ou un comportement suspect d'une adresse IP.
 
 ---
 
@@ -324,14 +271,13 @@ En cas d’alerte, la procédure suivante peut être appliquée :
 
 1. Ouvrir OpenSearch Dashboards.
 2. Sélectionner la période correspondant à l’alerte.
-3. Filtrer les logs avec les champs concernés.
-4. Identifier le service ou l’endpoint en erreur.
-5. Analyser les messages d’erreur associés.
-6. Utiliser le `correlationId` pour suivre le parcours d’une requête.
-7. Identifier la cause probable de l’incident.
-8. Corriger le problème ou créer un ticket d’anomalie.
-9. Vérifier le retour à la normale dans le dashboard.
-10. Documenter l’incident si nécessaire.
+3. Filtrer les logs avec le code HTTP concerné (response).
+4. Identifier la route (url) en erreur.
+5. Isoler l'adresse IP cliente (clientip) pour retracer le parcours de l'utilisateur.
+6. Identifier la cause probable de l’incident (ex: tentative d'accès non autorisé, erreur backend).
+7. Corriger le problème côté infrastructure ou réseau.
+8. Vérifier le retour à la normale dans le dashboard.
+9. Documenter l’incident si nécessaire.
 
 ---
 
@@ -346,32 +292,24 @@ Une alerte est déclenchée car le nombre d’erreurs HTTP 500 dépasse le seuil
 Filtrage des erreurs HTTP 500 :
 
 ```txt
-status: 500
+response: 500
 ```
 
-Filtrage sur l’endpoint concerné :
+Identification des endpoints les plus touchés :
 
 ```txt
-endpoint: "/api/users" AND status: 500
+Agrégation sur le champ "url"
 ```
 
-Analyse du message d’erreur :
+Filtrage sur l'IP cliente pour retracer l'action :
 
 ```txt
-message: "Database connection timeout"
-```
-
-Suivi d’une requête précise :
-
-```txt
-correlationId: "req-123456"
+clientip: "203.0.113.42"
 ```
 
 ### Conclusion possible
 
-L’analyse des logs permet d’identifier une erreur liée à une indisponibilité temporaire de la base de données ou à un timeout de connexion.
-
-Cette information permet d’orienter rapidement l’investigation vers la couche base de données ou la configuration réseau.
+L’analyse croisée de la route (url) et des tentatives de l'utilisateur (clientip) permet de confirmer si l'erreur 500 est due à un cas d'usage spécifique ou à une indisponibilité générale d'un service.
 
 ---
 
@@ -380,11 +318,14 @@ Cette information permet d’orienter rapidement l’investigation vers la couch
 Une organisation possible des fichiers liés au monitoring est la suivante :
 
 ```txt
-monitoring/
-├── fluent-bit.conf
-├── parsers.conf
-├── docker-compose.monitoring.yml
-└── README.md
+roles/fluentbit/
+├── tasks/
+│   └── main.yml
+├── templates/
+│   ├── fluent-bit.conf.j2
+│   └── parsers.conf.j2
+└── handlers/
+    └── main.yml
 
 docs/
 ├── monitoring-opensearch.md
@@ -405,7 +346,7 @@ Elle couvre :
 
 * la collecte automatisée des logs avec Fluent Bit ;
 * le parsing des logs applicatifs ;
-* l’enrichissement des logs avec des métadonnées ;
+* l’extraction de métriques web clés (clientip, response, url) ;
 * l’indexation des logs dans OpenSearch ;
 * la visualisation des données dans OpenSearch Dashboards ;
 * la création de dashboards de suivi ;
@@ -425,7 +366,7 @@ Cette mise en place permet de valider la compétence suivante :
 Les éléments concrets permettant de justifier cette compétence sont :
 
 * configuration de Fluent Bit pour la collecte des logs ;
-* définition d’un parser pour structurer les logs ;
+* définition d’un parser Regex personnalisé pour structurer les logs ;
 * envoi des logs vers OpenSearch ;
 * exploitation des logs dans OpenSearch Dashboards ;
 * création de visualisations ;
