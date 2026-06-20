@@ -2,12 +2,20 @@
     Flush         5
     Log_Level     warning
     Daemon        Off
+    Parsers_File  parsers.conf
 
 [INPUT]
     Name          tail
     Path          /var/log/auth.log,/var/log/syslog
     Tag           system
     Read_From_Head False
+
+[FILTER]
+    Name          parser
+    Match         system
+    Key_Name      log
+    Parser        extract_syslog_json
+    Reserve_Data  On
 
 [FILTER]
     Name          record_modifier

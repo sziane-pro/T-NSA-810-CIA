@@ -1,0 +1,5 @@
+[PARSER]
+    Name         extract_syslog_json
+    Format       regex
+    Regex        ^(?<syslog_time>[^ ]+)\s+(?<syslog_host>[^ ]+)\s+(?<process>[^:]+):\s+(?<json_payload>\{.*\})$
+    Decode_Field json json_payload
