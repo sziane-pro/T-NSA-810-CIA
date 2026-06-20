@@ -1,4 +1,0 @@
----
-# Variables communes à toutes les VMs Site 2
-vpn_tunnel_network: "10.0.0.0/30"
-

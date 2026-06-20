@@ -1,4 +1,3 @@
----
 - name: Populate NetBox with site infrastructure
   hosts: localhost
   connection: local
@@ -10,14 +9,10 @@
     netbox_validate_certs: false
 
     # NetBox API token stored in Vault
-    netbox_token: >-
-      {{ lookup(
-        'community.hashi_vault.hashi_vault',
-        'secret/data/netbox:api_token',
-        url=lookup('env', 'VAULT_ADDR'),
-        token=lookup('env', 'VAULT_TOKEN'),
-        validate_certs=false
-      ) }}
+    netbox_token: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:api_token',
+                      url=lookup('env', 'VAULT_ADDR'),
+                      token=lookup('env', 'VAULT_TOKEN'),
+                      validate_certs=false) }}"
 
     # Site metadata
     site_name: "Site 1"
@@ -72,7 +67,7 @@
     firewall_role_slug: "firewall"
     firewall_role_color: "f44336"
     firewall_device_name: "pfsense-site1"
-    firewall_comments: "Firewall pfSense 1 — VLANs LAN/ADMIN + VPN site-à-site"
+    firewall_comments: "Firewall pfSense Site 1 — VLANs LAN/ADMIN + VPN site-à-site"
 
     # pfSense interfaces
     firewall_interfaces:
@@ -119,11 +114,7 @@
     vpn_tunnel_name: "VPN-Site1-Site2"
     vpn_tunnel_status: active
     vpn_tunnel_encapsulation: gre
-    vpn_tunnel_description: >
-      OpenVPN site-à-site |
-      réseau 10.0.0.0/30 |
-      Site1: 10.0.0.1 (pfsense-site1:ovpns1) |
-      Site2: 10.0.0.2 (pfsense-site2:ovpns1)
+    vpn_tunnel_description: "OpenVPN site-à-site | réseau 10.0.0.0/30 | Site1: 10.0.0.1 (pfsense-site1:ovpns1) | Site2: 10.0.0.2 (pfsense-site2:ovpns1)"
 
   tasks:
     # Site
