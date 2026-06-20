@@ -2,4 +2,4 @@
   ansible.builtin.systemd:
     name: opensearch-dashboards
     state: restarted
-    daemon_reload: yes 
+    daemon_reload: yes

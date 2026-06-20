@@ -37,4 +37,4 @@
   ansible.builtin.systemd:
     name: opensearch-dashboards
     state: started
-    enabled: yes 
+    enabled: yes
