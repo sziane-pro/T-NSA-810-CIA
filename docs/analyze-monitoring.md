@@ -93,21 +93,21 @@ Ce parser permet à Fluent Bit de lire une ligne de log classique, d'isoler la p
 
 ---
 
-## 6. Champs exploités dans OpenSearch (A ADAPTER)
+## 6. Champs exploités dans OpenSearch
 
 Les logs envoyés dans OpenSearch contiennent plusieurs champs permettant l’analyse et la recherche.
 
-| Champ             | Description                                       |
-| ----------------- | ------------------------------------------------- |
-| `@timestamp`      | Date et heure du log                              |
-| `response`        | Code de statut HTTP retourné (ex: 200, 404, 500)  |
-| `url`             | Route API ou page web appelée                     |
-| `request`         | Méthode HTTP ou requête brute utilisée            |
-| `clientip`        | Adresse IP de l'utilisateur ou du client          |
-| `geo.coordinates` | Coordonnées géographiques déduites de l'IP        |
-| `machine.os`      | Système d'exploitation du client                  |
-| `bytes`           | Taille de la réponse renvoyée en octets           |
-| `_source_host`    | VM source ayant généré le log                     |
+| Champ               | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `@timestamp`        | Date et heure du log                                |
+| `statusCode`        | Code de statut HTTP retourné (ex: 200, 404, 500)    |
+| `req.url`           | Route API ou page web appelée                       |
+| `method`            | Méthode HTTP utilisée (GET, POST...)                |
+| `req.remoteAddress` | Adresse IP de l'utilisateur ou du client            |
+| `req.userAgent`     | Navigateur et système d'exploitation bruts          |
+| `res.responseTime`  | Temps de réponse du serveur en millisecondes        |
+| `res.contentLength` | Taille de la réponse renvoyée en octets             |
+| `source_host`       | VM source ayant généré le log                       |
 
 Ces champs permettent de filtrer rapidement les logs dans OpenSearch Dashboards.
 
@@ -128,19 +128,19 @@ OpenSearch Dashboards permet d’explorer les logs à l’aide de requêtes.
 ### Rechercher les erreurs HTTP 500
 
 ```txt
-response: 500
+statusCode: 500
 ```
 
 ### Rechercher toute les erreurs côté client et serveur
 
 ```txt
-response >= 400
+statusCode >= 400
 ```
 
 ### Rechercher les erreurs sur un endpoint précis
 
 ```txt
-url: "/api/users" AND response >= 400
+url: "/api/users" AND statusCode >= 400
 ```
 
 ### Rechercher les requêtes provenant d'une IP spécifique
@@ -165,28 +165,25 @@ Des dashboards sont créés dans OpenSearch Dashboards afin d’avoir une vision
 
 ### Dashboard analytique
 
-Le dashboard applicatif permet de suivre les indicateurs suivants :
+Le dashboard applicatif est construit autour d'une interface claire basée sur des cartes (card-based layout) et permet de suivre les indicateurs suivants :
 
-* volume total des requêtes ;
-* répartition des codes HTTP (response) ;
-* cartographie du trafic entrant (geo.coordinates) ;
-* répartition des systèmes d'exploitation et navigateurs (machine.os, agent) ;
-* top des endpoints générant le plus d’erreurs (url) ;
-* top des adresses IP clientes (clientip).
+* trafic global et temps de réponse moyen (res.responseTime) ;
+* répartition des codes HTTP (statusCode) ;
+* répartition des méthodes HTTP (method) ;
+* top des endpoints les plus sollicités ou générant des erreurs (req.url) ;
+* top des adresses IP clientes (req.remoteAddress).
 
 ### Exemples de visualisations
 
 | Visualisation          | Objectif                                             |
 | ---------------------- | ---------------------------------------------------- |
 | Metric Card (Erreurs)  | Identifier rapidement une hausse d’erreurs 500/400   |
+| Metric Card (Latence)  | Surveiller le temps de réponse moyen du serveur      |
 | Histogramme HTTP       | Visualiser la santé globale et le volume du trafic   |
-| Coordinate Map         | Afficher la provenance géographique des requêtes     |
-| Data Table (Endpoints) | Identifier les routes les plus instables ou visitées |
-| Pie Chart (OS/Agent)   | Analyser les habitudes des utilisateurs              |
+| Donut Chart (Méthodes) | Analyser la proportion de trafic en lecture/écriture |
+| Bar Chart (Endpoints)  | Identifier les routes les plus visitées              |
 
-### Captures d’écran à ajouter
-
-Les captures d’écran suivantes peuvent être ajoutées dans le dossier `docs/images/` :
+### Captures d’écran du dashboard
 
 ```txt
 docs/images/dashboard-overview.png
@@ -195,14 +192,16 @@ docs/images/dashboard-http-status.png
 docs/images/alert-rule.png
 ```
 
-Exemple d’intégration dans la documentation :
-
 ```md
-![Dashboard overview](./images/dashboard-overview.png)
+![Dashboard overview](./images/dashboard-overview-1.png)
+![Dashboard overview - 2](./images/dashboard-overview-2.png)
+![Dashboard overview - 3](./images/dashboard-overview-3.png)
 
-![Dashboard erreurs](./images/dashboard-errors.png)
+![Logs erreurs HTTP via Discover](./images/error-logs.png)
 
 ![Règle d’alerte](./images/alert-rule.png)
+![Règle d’alerte - 2](./images/alert-rule-2.png)
+![Règle d’alerte - notification](./images/alert-teams.png)
 ```
 
 ---
@@ -218,7 +217,7 @@ L’objectif est d’être notifié lorsqu’un comportement anormal est détect
 Condition surveillée :
 
 ```txt
-response: 500
+statusCode: 500
 ```
 
 Seuil d’alerte :
@@ -244,7 +243,7 @@ Identifier les erreurs serveur susceptibles d’impacter les utilisateurs.
 Condition surveillée :
 
 ```txt
-response >= 400
+statusCode >= 400
 ```
 
 Seuil d’alerte :
@@ -271,7 +270,7 @@ En cas d’alerte, la procédure suivante peut être appliquée :
 
 1. Ouvrir OpenSearch Dashboards.
 2. Sélectionner la période correspondant à l’alerte.
-3. Filtrer les logs avec le code HTTP concerné (response).
+3. Filtrer les logs avec le code HTTP concerné (statusCode).
 4. Identifier la route (url) en erreur.
 5. Isoler l'adresse IP cliente (clientip) pour retracer le parcours de l'utilisateur.
 6. Identifier la cause probable de l’incident (ex: tentative d'accès non autorisé, erreur backend).
@@ -292,7 +291,7 @@ Une alerte est déclenchée car le nombre d’erreurs HTTP 500 dépasse le seuil
 Filtrage des erreurs HTTP 500 :
 
 ```txt
-response: 500
+statusCode: 500
 ```
 
 Identification des endpoints les plus touchés :
