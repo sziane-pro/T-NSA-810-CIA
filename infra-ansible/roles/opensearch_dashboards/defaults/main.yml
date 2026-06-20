@@ -15,4 +15,4 @@ opensearch_hosts: "http://{{ opensearch_host }}:{{ opensearch_port }}"
 opensearch_dashboards_user: "admin"
 opensearch_dashboards_password: "{{ opensearch_password }}"
 
-opensearch_ssl_verification: "none"
+opensearch_ssl_verification: "none" 
