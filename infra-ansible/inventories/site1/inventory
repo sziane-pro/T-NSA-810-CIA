@@ -1,6 +1,6 @@
 [site1]
-lan_vm ansible_host=5.196.51.228 ansible_port=2224
-admin_vm ansible_host=5.196.51.228 ansible_port=2223
+lan_vm ansible_host=5.196.51.228 ansible_port=2226
+admin_vm ansible_host=5.196.51.228 ansible_port=2225
 
 [firewall]
 pfsense ansible_host=5.196.51.228 ansible_port=22

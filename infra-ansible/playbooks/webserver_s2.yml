@@ -1,5 +1,5 @@
 ---
-- name: Configure WebServer Site 2 (Nginx + Filebeat)
+- name: Configure WebServer Site 2 (Nginx + Filebeat + Dashboards)
   hosts: webserver_vm
   gather_facts: true
 
@@ -9,4 +9,4 @@
       private: true
 
   roles:
-    - webserver
+    - opensearch_dashboards
