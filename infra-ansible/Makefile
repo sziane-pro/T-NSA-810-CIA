@@ -123,7 +123,7 @@ site1-pfsense-vpn:
 	@sleep 1
 	@read -p "Token Vault (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags vpn; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-vault:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml
@@ -136,7 +136,7 @@ site1-lan:
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml
-	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	@pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-dns:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/dns.yml
@@ -162,7 +162,7 @@ site1-vpn:
 	@echo ">>> Token Vault (root) :"
 	@read -p "Token Vault (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site1-pki:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --tags pki
@@ -177,7 +177,7 @@ site1-netbox-token:
 	@sleep 1
 	@read -p "Token Vault admin (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
-	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
+	pkill -f "ssh.*8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 site1-fluentbit:
 	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
@@ -188,7 +188,7 @@ site1-fluentbit:
 	@sleep 1
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --limit lan_vm
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit.yml --limit admin_vm
-	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	@pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 netbox-sync:
 	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
@@ -199,7 +199,7 @@ netbox-sync:
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_sync.yml; \
-	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
+	pkill -f "ssh.*8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 site1-netbox-autosync:
 	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
@@ -209,7 +209,7 @@ site1-netbox-autosync:
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_autosync.yml; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 # --- Orchestration Site 1 (deploiement complet, etape par etape) ---
 # Reproduit l'ordre documente dans docs/INSTALL.md. Les etapes Vault (init +
@@ -302,7 +302,7 @@ site2-vpn:
 	@read -p "Token Vault (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-vpn-client:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
@@ -314,7 +314,7 @@ site2-vpn-client:
 	@sleep 1
 	@read -p "Token Vault (root) : " vault_token; \
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network_s2.yml --tags vpn; \
-	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-bastion:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/bastion_s2.yml
@@ -333,7 +333,7 @@ site2-fluentbit:
 		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
 	@sleep 1
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit_s2.yml
-	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+	@pkill -f "ssh.*8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 site2-dns:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/dns.yml
