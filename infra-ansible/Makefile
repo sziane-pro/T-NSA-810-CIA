@@ -105,7 +105,7 @@ install:
 # --- Site 1 ---
 
 site1-pfsense:
-	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --skip-tags vpn
 
 site1-pfsense-rules:
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/pfsense_network.yml --tags rules
