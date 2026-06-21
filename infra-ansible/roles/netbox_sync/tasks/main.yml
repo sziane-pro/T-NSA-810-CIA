@@ -1,0 +1,154 @@
+---
+# ============================================================
+# Applique la source de verite IPAM (defaults/main.yml) dans NetBox.
+# Idempotent (state: present) : rejouable a volonte (operateur ou timer).
+# ============================================================
+
+- name: Synchronise NetBox from the IPAM source of truth
+  module_defaults:
+    netbox.netbox.netbox_site: &nb
+      netbox_url: "{{ netbox_url }}"
+      netbox_token: "{{ netbox_token }}"
+      validate_certs: "{{ netbox_validate_certs }}"
+    netbox.netbox.netbox_manufacturer: *nb
+    netbox.netbox.netbox_device_type: *nb
+    netbox.netbox.netbox_device_role: *nb
+    netbox.netbox.netbox_prefix: *nb
+    netbox.netbox.netbox_cluster_type: *nb
+    netbox.netbox.netbox_cluster: *nb
+    netbox.netbox.netbox_virtual_machine: *nb
+    netbox.netbox.netbox_vm_interface: *nb
+    netbox.netbox.netbox_ip_address: *nb
+    netbox.netbox.netbox_device: *nb
+    netbox.netbox.netbox_device_interface: *nb
+    netbox.netbox.netbox_service: *nb
+    netbox.netbox.netbox_tunnel: *nb
+  block:
+
+    - name: Sites
+      netbox.netbox.netbox_site:
+        data: { name: "{{ item.name }}", slug: "{{ item.slug }}", status: active }
+        state: present
+      loop: "{{ netbox_sites }}"
+
+    # --- Catalogue materiel (statique) ---
+    - name: Manufacturer
+      netbox.netbox.netbox_manufacturer:
+        data: { name: "Netgate", slug: "netgate" }
+        state: present
+
+    - name: Device type
+      netbox.netbox.netbox_device_type:
+        data: { model: "pfSense", slug: "pfsense", manufacturer: "Netgate" }
+        state: present
+
+    - name: Device role
+      netbox.netbox.netbox_device_role:
+        data: { name: "Firewall", slug: "firewall", color: "f44336" }
+        state: present
+
+    - name: Cluster type
+      netbox.netbox.netbox_cluster_type:
+        data: { name: "KVM", slug: "kvm" }
+        state: present
+
+    # --- Reseaux ---
+    - name: Prefixes
+      netbox.netbox.netbox_prefix:
+        data:
+          prefix: "{{ item.prefix }}"
+          site: "{{ item.site }}"
+          description: "{{ item.description }}"
+          status: active
+        state: present
+      loop: "{{ netbox_prefixes }}"
+
+    # --- Virtualisation ---
+    - name: Clusters
+      netbox.netbox.netbox_cluster:
+        data: { name: "{{ item.name }}", cluster_type: "KVM", site: "{{ item.site }}" }
+        state: present
+      loop: "{{ netbox_clusters }}"
+
+    - name: Virtual machines
+      netbox.netbox.netbox_virtual_machine:
+        data:
+          name: "{{ item.name }}"
+          cluster: "{{ item.cluster }}"
+          site: "{{ item.site }}"
+          status: active
+          comments: "{{ item.comments }}"
+        state: present
+      loop: "{{ netbox_vms }}"
+
+    - name: VM interfaces
+      netbox.netbox.netbox_vm_interface:
+        data: { virtual_machine: "{{ item.vm }}", name: "{{ item.name }}" }
+        state: present
+      loop: "{{ netbox_vm_interfaces }}"
+
+    - name: VM IP addresses
+      netbox.netbox.netbox_ip_address:
+        data:
+          address: "{{ item.address }}"
+          assigned_object: { virtual_machine: "{{ item.vm }}", name: "{{ item.iface }}" }
+          status: active
+          description: "{{ item.description }}"
+        state: present
+      loop: "{{ netbox_vm_ips }}"
+
+    # --- Firewalls (devices) ---
+    - name: Devices (pfSense)
+      netbox.netbox.netbox_device:
+        data:
+          name: "{{ item.name }}"
+          device_type: "pfSense"
+          device_role: "Firewall"
+          site: "{{ item.site }}"
+          status: active
+          comments: "{{ item.comments }}"
+        state: present
+      loop: "{{ netbox_devices }}"
+
+    - name: Device interfaces
+      netbox.netbox.netbox_device_interface:
+        data:
+          device: "{{ item.device }}"
+          name: "{{ item.name }}"
+          type: "virtual"
+          description: "{{ item.description }}"
+        state: present
+      loop: "{{ netbox_device_interfaces }}"
+
+    - name: Device IP addresses
+      netbox.netbox.netbox_ip_address:
+        data:
+          address: "{{ item.address }}"
+          assigned_object: { device: "{{ item.device }}", name: "{{ item.iface }}" }
+          status: active
+          description: "{{ item.description }}"
+        state: present
+      loop: "{{ netbox_device_ips }}"
+
+    # --- Services applicatifs ---
+    - name: Services
+      netbox.netbox.netbox_service:
+        data:
+          virtual_machine: "{{ item.vm }}"
+          name: "{{ item.name }}"
+          ports: ["{{ item.port }}"]
+          protocol: tcp
+          description: "{{ item.description }}"
+        state: present
+      loop: "{{ netbox_services }}"
+
+    # --- VPN ---
+    - name: VPN tunnels
+      netbox.netbox.netbox_tunnel:
+        data:
+          name: "{{ item.name }}"
+          status: active
+          encapsulation: gre
+          description: "{{ item.description }}"
+        state: present
+      loop: "{{ netbox_tunnels }}"

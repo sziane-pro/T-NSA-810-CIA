@@ -116,7 +116,7 @@ make site1-pki            # PKI dans Vault
 make site1-vpn            # serveur OpenVPN
 make site1-lan            # OpenSearch + NetBox
 make site1-netbox-token   # token API NetBox -> Vault
-make site1-netbox-populate
+make netbox-sync          # peuple/MAJ NetBox (IPAM, les 2 sites)
 make site1-dns            # resolver Unbound + RPZ
 make site1-fluentbit      # logs -> OpenSearch
 make site1-harden         # SSH key-only

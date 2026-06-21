@@ -1,0 +1,80 @@
+---
+# ============================================================
+# netbox_sync — Source de verite IPAM (data-driven), 2 sites.
+# Modifier l'infra = editer ces listes ; le role applique tout en
+# idempotent (state: present) via l'API NetBox.
+# Connexion attendue du playbook : netbox_url, netbox_token,
+# netbox_validate_certs.
+# ============================================================
+
+netbox_validate_certs: false
+
+netbox_sites:
+  - { name: "Site 1", slug: "site-1" }
+  - { name: "Site 2", slug: "site-2" }
+
+netbox_prefixes:
+  - { prefix: "192.168.10.0/24",  site: "Site 1", description: "LAN VLAN10" }
+  - { prefix: "192.168.30.0/24",  site: "Site 1", description: "ADMIN VLAN30" }
+  - { prefix: "192.168.110.0/24", site: "Site 2", description: "LAN VLAN110" }
+  - { prefix: "192.168.120.0/24", site: "Site 2", description: "DMZ VLAN120" }
+  - { prefix: "192.168.130.0/24", site: "Site 2", description: "ADMIN VLAN130" }
+  - { prefix: "10.0.0.0/30",      site: "Site 1", description: "VPN Tunnel Site-a-Site" }
+
+netbox_clusters:
+  - { name: "Site1-Cluster", site: "Site 1" }
+  - { name: "Site2-Cluster", site: "Site 2" }
+
+netbox_vms:
+  - { name: "lan_vm",       cluster: "Site1-Cluster", site: "Site 1", comments: "NetBox (IPAM) + OpenSearch (logs)" }
+  - { name: "admin_vm",     cluster: "Site1-Cluster", site: "Site 1", comments: "HashiCorp Vault (secrets) + PKI" }
+  - { name: "bastion_vm",   cluster: "Site2-Cluster", site: "Site 2", comments: "Bastion SSH (acces externe)" }
+  - { name: "webserver_vm", cluster: "Site2-Cluster", site: "Site 2", comments: "Nginx (site interne) + OpenSearch Dashboards" }
+
+netbox_vm_interfaces:
+  - { vm: "lan_vm",       name: "eth0" }
+  - { vm: "admin_vm",     name: "eth0" }
+  - { vm: "bastion_vm",   name: "eth0" }
+  - { vm: "webserver_vm", name: "eth0" }
+
+netbox_vm_ips:
+  - { vm: "lan_vm",       iface: "eth0", address: "192.168.10.101/24",  description: "LAN — lan_vm" }
+  - { vm: "admin_vm",     iface: "eth0", address: "192.168.30.101/24",  description: "ADMIN — admin_vm" }
+  - { vm: "bastion_vm",   iface: "eth0", address: "192.168.120.10/24",  description: "DMZ — bastion" }
+  - { vm: "webserver_vm", iface: "eth0", address: "192.168.110.100/24", description: "LAN — webserver" }
+
+netbox_devices:
+  - { name: "pfsense-site1", site: "Site 1", comments: "Firewall pfSense Site 1 — VLANs LAN/ADMIN + VPN" }
+  - { name: "pfsense-site2", site: "Site 2", comments: "Firewall pfSense Site 2 — VLANs LAN/DMZ/ADMIN + VPN" }
+
+netbox_device_interfaces:
+  - { device: "pfsense-site1", name: "vtnet0",     description: "WAN" }
+  - { device: "pfsense-site1", name: "vtnet1.10",  description: "LAN VLAN10" }
+  - { device: "pfsense-site1", name: "vtnet1.30",  description: "ADMIN VLAN30" }
+  - { device: "pfsense-site1", name: "ovpns1",     description: "OpenVPN serveur (tunnel S2S)" }
+  - { device: "pfsense-site2", name: "vtnet0",     description: "WAN" }
+  - { device: "pfsense-site2", name: "vtnet1.110", description: "LAN VLAN110" }
+  - { device: "pfsense-site2", name: "vtnet1.120", description: "DMZ VLAN120" }
+  - { device: "pfsense-site2", name: "vtnet1.130", description: "ADMIN VLAN130" }
+  - { device: "pfsense-site2", name: "ovpnc1",     description: "OpenVPN client (tunnel S2S)" }
+
+netbox_device_ips:
+  - { device: "pfsense-site1", iface: "vtnet1.10",  address: "192.168.10.1/24",  description: "Gateway LAN VLAN10" }
+  - { device: "pfsense-site1", iface: "vtnet1.30",  address: "192.168.30.1/24",  description: "Gateway ADMIN VLAN30" }
+  - { device: "pfsense-site1", iface: "ovpns1",     address: "10.0.0.1/30",      description: "Tunnel OpenVPN — Site 1" }
+  - { device: "pfsense-site2", iface: "vtnet1.110", address: "192.168.110.1/24", description: "Gateway LAN VLAN110" }
+  - { device: "pfsense-site2", iface: "vtnet1.120", address: "192.168.120.1/24", description: "Gateway DMZ VLAN120" }
+  - { device: "pfsense-site2", iface: "vtnet1.130", address: "192.168.130.1/24", description: "Gateway ADMIN VLAN130" }
+  - { device: "pfsense-site2", iface: "ovpnc1",     address: "10.0.0.2/30",      description: "Tunnel OpenVPN — Site 2" }
+
+netbox_services:
+  - { vm: "lan_vm",       name: "netbox",     port: 443,  description: "NetBox IPAM/DCIM (HTTPS)" }
+  - { vm: "lan_vm",       name: "opensearch", port: 9200, description: "OpenSearch REST API" }
+  - { vm: "admin_vm",     name: "vault",      port: 8200, description: "HashiCorp Vault (HTTPS)" }
+  - { vm: "webserver_vm", name: "dashboards", port: 5601, description: "OpenSearch Dashboards" }
+  - { vm: "webserver_vm", name: "nginx",      port: 80,   description: "Site web interne (HTTP)" }
+  - { vm: "bastion_vm",   name: "ssh",        port: 22,   description: "Bastion SSH" }
+
+netbox_tunnels:
+  - name: "VPN-Site1-Site2"
+    description: "OpenVPN site-a-site | 10.0.0.0/30 | S1 10.0.0.1 (ovpns1) | S2 10.0.0.2 (ovpnc1)"
