@@ -34,6 +34,7 @@ vm_ssh_allowed_ips:
 # VPN Site-a-Site
 vpn_tunnel_network: "10.0.0.0/30"
 vpn_site2_lan: "192.168.110.0/24"
+vpn_site2_dmz: "192.168.120.0/24"
 vpn_site2_admin: "192.168.130.0/24"
 
 # ============================================================
