@@ -10,11 +10,29 @@
     Tag           system
     Read_From_Head False
 
+# Logs d'acces Nginx (site web interne) — present uniquement sur webserver_vm,
+# ignore sans erreur ailleurs. Deja en JSON (cf. nginx.conf).
+[INPUT]
+    Name          tail
+    Path          /var/log/nginx/access.log
+    Tag           nginx
+    Parser        nginx_json
+    Read_From_Head False
+
 [FILTER]
     Name          parser
     Match         system
     Key_Name      log
     Parser        extract_syslog_json
+    Reserve_Data  On
+
+# Structure les lignes syslog "classiques" (sans payload JSON) :
+# process + message requetables (SSH, sudo, fail2ban...).
+[FILTER]
+    Name          parser
+    Match         system
+    Key_Name      log
+    Parser        syslog_plain
     Reserve_Data  On
 
 [FILTER]
