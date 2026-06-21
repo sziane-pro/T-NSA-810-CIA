@@ -19,11 +19,11 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
 
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
-        site1-netbox-token site1-netbox-populate site1-filebeat \
+        site1-netbox-token site1-netbox-populate site1-fluentbit \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-all \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-fluentbit site2-all \
         site2-check site2-pfsense-check site2-bastion-check site2-webserver-check \
         ping ping-s2
 
@@ -42,7 +42,7 @@ help:
 	@echo "  make site1-pki            - Genere la PKI Site 1 uniquement"
 	@echo "  make site1-netbox-token   - Genere le token API NetBox et le stocke dans Vault"
 	@echo "  make site1-netbox-populate - Peuple NetBox avec l'infrastructure Site 1"
-	@echo "  make site1-filebeat        - Installe Filebeat sur toutes les VMs Site 1"
+	@echo "  make site1-fluentbit       - Installe Fluent Bit sur toutes les VMs Site 1"
 	@echo ""
 	@echo "  --- Tunnels SSH ---"
 	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
@@ -58,8 +58,9 @@ help:
 	@echo "  make site2-vpn           - Configure OpenVPN client Site 2 (relance aussi la PKI Site 1)"
 	@echo "  make site2-vpn-client    - Configure le client VPN Site 2 uniquement (ne touche pas au Site 1)"
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
-	@echo "  make site2-webserver      - Configure le WebServer Site 2 (Nginx + Filebeat vers OpenSearch)"
-	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver)"
+	@echo "  make site2-webserver      - Deploie OpenSearch Dashboards sur le WebServer Site 2"
+	@echo "  make site2-fluentbit      - Installe Fluent Bit sur les VMs Site 2 (logs vers OpenSearch Site 1)"
+	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver + fluentbit)"
 	@echo ""
 	@echo "  --- Dry-run Site 2 (simulation) ---"
 	@echo "  make site2-check          - Simule tout le deploiement Site 2"
@@ -148,7 +149,7 @@ site1-netbox-token:
 	VAULT_TOKEN=$$vault_token ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_token.yml; \
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
-site1-filebeat:
+site1-fluentbit:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
@@ -213,11 +214,22 @@ site2-bastion:
 site2-webserver:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml
 
+site2-fluentbit:
+	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit_s2.yml
+	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+
 site2-all:
-	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver)"
+	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → fluentbit)"
 	@$(MAKE) site2-pfsense
 	@$(MAKE) site2-bastion
 	@$(MAKE) site2-webserver
+	@$(MAKE) site2-fluentbit
 
 site2-check:
 	@$(MAKE) site2-pfsense-check

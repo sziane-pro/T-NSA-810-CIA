@@ -1,5 +1,5 @@
 ---
-- name: Configure WebServer Site 2 (Nginx + Filebeat + Dashboards)
+- name: Deploy OpenSearch Dashboards (WebServer Site 2)
   hosts: webserver_vm
   gather_facts: true
 
