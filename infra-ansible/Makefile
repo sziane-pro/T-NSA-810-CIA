@@ -22,6 +22,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
         site1-killswitch site1-killswitch-restore site2-killswitch site2-killswitch-restore \
         site1-harden site2-harden \
         site1-netbox-token netbox-sync site1-netbox-autosync site1-fluentbit \
+        site1-all deploy-all \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
@@ -50,6 +51,10 @@ help:
 	@echo "  make site1-killswitch      - COUPURE D'URGENCE : isole totalement le Site 1"
 	@echo "  make site1-killswitch-restore - Retablit le Site 1 (et pre-cree les regles)"
 	@echo "  make site1-harden          - Durcit SSH key-only sur lan_vm/admin_vm Site 1"
+	@echo "  make site1-all             - Deploie TOUT le Site 1, etape par etape (voir docs/INSTALL.md)"
+	@echo ""
+	@echo "  --- Orchestration globale ---"
+	@echo "  make deploy-all          - Deploie Site 1 puis Site 2 (infra complete)"
 	@echo ""
 	@echo "  --- Tunnels SSH ---"
 	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
@@ -205,6 +210,74 @@ site1-netbox-autosync:
 	@sleep 1
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_autosync.yml; \
 	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+
+# --- Orchestration Site 1 (deploiement complet, etape par etape) ---
+# Reproduit l'ordre documente dans docs/INSTALL.md. Les etapes Vault (init +
+# unseal) et les prompts de token restent MANUELS : on s'arrete avant si besoin.
+
+site1-all:
+	@echo "============================================================"
+	@echo ">>> DEPLOIEMENT COMPLET SITE 1"
+	@echo ">>> Pre-requis : .env rempli, cle SSH en place, 'make ping' OK."
+	@echo ">>> Detail de chaque etape : docs/INSTALL.md"
+	@echo "============================================================"
+	@echo ""
+	@echo ">>> [1/9] pfSense : VLANs, interfaces, regles firewall + NAT"
+	@$(MAKE) site1-pfsense
+	@echo ""
+	@echo ">>> [2/9] Vault (admin_vm)"
+	@$(MAKE) site1-vault
+	@echo ""
+	@echo "    !!! ACTION MANUELLE REQUISE !!!"
+	@echo "    Si Vault vient d'etre installe : l'initialiser et le desceller."
+	@echo "    Voir docs/INSTALL.md section 'Initialiser Vault'."
+	@read -p "    Vault est initialise ET descelle (Sealed: false) ? [Entree pour continuer] " _ack
+	@echo ""
+	@echo ">>> [3/9] PKI + OpenVPN site-a-site (token Vault demande)"
+	@$(MAKE) site1-vpn
+	@echo ""
+	@echo ">>> [4/9] OpenSearch + NetBox (lan_vm)"
+	@$(MAKE) site1-lan
+	@echo ""
+	@echo ">>> [5/9] DNS Resolver (Unbound) Site 1"
+	@$(MAKE) site1-dns
+	@echo ""
+	@echo ">>> [6/9] Token API NetBox -> Vault (token Vault demande)"
+	@$(MAKE) site1-netbox-token
+	@echo ""
+	@echo ">>> [7/9] Synchronisation NetBox (IPAM, les 2 sites)"
+	@$(MAKE) netbox-sync
+	@echo ""
+	@echo ">>> [8/9] Timer systemd d'auto-sync NetBox (lan_vm)"
+	@$(MAKE) site1-netbox-autosync
+	@echo ""
+	@echo ">>> [9/9] Fluent Bit (collecte de logs -> OpenSearch)"
+	@$(MAKE) site1-fluentbit
+	@echo ""
+	@echo ">>> Durcissement SSH key-only (lan_vm + admin_vm) — EN DERNIER"
+	@$(MAKE) site1-harden
+	@echo ""
+	@echo ">>> SITE 1 DEPLOYE. Lancez 'make deploy-all' ou 'make site2-all' pour le Site 2."
+
+# --- Orchestration globale (les deux sites) ---
+# Le VPN site-a-site doit etre UP (etape site1-vpn + site2-vpn) pour que le
+# Site 2 atteigne OpenSearch sur le Site 1.
+
+deploy-all:
+	@echo "############################################################"
+	@echo "## DEPLOIEMENT INFRASTRUCTURE COMPLETE (Site 1 + Site 2)  ##"
+	@echo "############################################################"
+	@$(MAKE) site1-all
+	@echo ""
+	@echo ">>> Bascule sur le SITE 2..."
+	@echo "    (le tunnel VPN cote Site 2 est etabli par 'make site2-vpn')"
+	@$(MAKE) site2-vpn
+	@$(MAKE) site2-all
+	@$(MAKE) site2-harden
+	@echo ""
+	@echo "############################################################"
+	@echo "## INFRASTRUCTURE DEPLOYEE. Verifs : docs/INSTALL.md §10   ##"
+	@echo "############################################################"
 
 # --- Site 2 ---
 
