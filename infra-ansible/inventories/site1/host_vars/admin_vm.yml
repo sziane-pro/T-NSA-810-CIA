@@ -1,2 +1,6 @@
 vault_listen_address: 192.168.30.101
 ansible_become_pass: "{{ admin_vm_sudo_pass }}"
+
+# admin_vm sert de passerelle SSH pour les tunnels de management
+# (Vault 8200, NetBox 8443, OpenSearch 9200) -> le forwarding TCP est requis.
+ssh_allow_tcp_forwarding: "yes"
