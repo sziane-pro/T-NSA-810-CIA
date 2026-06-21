@@ -1,0 +1,45 @@
+---
+# ============================================================
+# Kill switch — isolation totale du site via regles flottantes
+# Les regles flottantes "quick" priment sur toutes les regles
+# d'interface : quand activees, elles coupent tout le WAN (in/out)
+# + le VPN, sans toucher aux regles existantes.
+# Etat pilote par killswitch_enabled (disabled = not killswitch_enabled).
+# ============================================================
+
+# Exception recovery : l'entree SSH bastion reste joignable pendant
+# l'isolation (placee AU-DESSUS du block, evaluee en premier).
+- name: Kill switch - allow bastion recovery during isolation
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH allow bastion"
+    action: pass
+    floating: true
+    direction: in
+    interface: WAN
+    quick: true
+    ipprotocol: inet
+    protocol: tcp
+    source: ssh_admin_allowed
+    destination: "(self)"
+    destination_port: "{{ bastion_nat_port }}"
+    after: top
+    disabled: "{{ not (killswitch_enabled | default(false) | bool) }}"
+    state: present
+  when: killswitch_bastion_exception | default(false) | bool
+
+# Bloc d'isolation totale : tout le trafic WAN (entrant + sortant) + VPN.
+- name: Kill switch - block ALL WAN traffic (total isolation)
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH block all WAN"
+    action: block
+    floating: true
+    direction: any
+    interface: WAN
+    quick: true
+    ipprotocol: inet
+    protocol: any
+    source: any
+    destination: any
+    after: "{{ 'KILL-SWITCH allow bastion' if (killswitch_bastion_exception | default(false) | bool) else 'top' }}"
+    disabled: "{{ not (killswitch_enabled | default(false) | bool) }}"
+    state: present

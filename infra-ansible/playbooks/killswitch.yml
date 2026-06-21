@@ -1,0 +1,13 @@
+---
+# Coupure d'urgence (kill switch) — ADR-009.
+# Pre-cree les regles flottantes d'isolation (normalement desactivees).
+#   make site1-killswitch / site2-killswitch           -> ACTIVE l'isolation
+#   make site1-killswitch-restore / site2-...-restore  -> DESACTIVE (etat normal)
+# Recovery si le site est deja isole : passer par la CONSOLE Proxmox/OVH
+# (et le bastion cote Site 2). Voir le runbook DRP.
+- name: Emergency cut-off (kill switch) on pfSense
+  hosts: firewall:firewall_s2
+  gather_facts: false
+
+  roles:
+    - killswitch

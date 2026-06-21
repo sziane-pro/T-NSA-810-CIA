@@ -39,3 +39,26 @@ vpn_port: 1194
 vpn_tunnel_network: "10.0.0.0/30"
 vpn_site1_lan: "192.168.10.0/24"
 vpn_site1_admin: "192.168.30.0/24"
+
+# ============================================================
+# DNS (Unbound) — zone interne Site 2 + resolution croisee vers Site 1
+# ============================================================
+dns_zone: "site2.lan"
+
+dns_hosts:
+  - { host: "bastion",    ip: "{{ bastion_ip }}",   descr: "Bastion Host" }
+  - { host: "webserver",  ip: "{{ webserver_ip }}", descr: "WebServer" }
+  - { host: "dashboards", ip: "{{ webserver_ip }}", descr: "OpenSearch Dashboards" }
+  - { host: "fw",         ip: "{{ lan_ip }}",       descr: "pfSense Site 2" }
+
+dns_domainoverrides:
+  - { domain: "site1.lan", ip: "192.168.10.1", descr: "Resolution croisee vers Site 1 (via VPN)" }
+
+# VLANs internes autorises a interroger le DNS du pfSense
+dns_client_interfaces:
+  - "LAN"
+  - "DMZ"
+  - "ADMIN"
+
+# Kill switch : garder l'entree bastion joignable pendant l'isolation (recovery)
+killswitch_bastion_exception: true

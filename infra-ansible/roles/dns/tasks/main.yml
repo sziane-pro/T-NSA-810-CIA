@@ -1,0 +1,64 @@
+---
+# ============================================================
+# Configure le DNS Resolver (Unbound) de pfSense :
+# - resolver pur (recursif depuis la racine) + DNSSEC
+# - host overrides (A) + PTR (reverse) pour les services internes
+# - domain overrides : resolution croisee inter-sites via le VPN
+# - RPZ : blocage des domaines malveillants
+# Les donnees (zone, hosts, domainoverrides) viennent des group_vars.
+# ============================================================
+
+- name: Fail early if dns_zone is not defined for this site
+  ansible.builtin.assert:
+    that:
+      - dns_zone | length > 0
+    fail_msg: "dns_zone doit etre defini dans les group_vars du site."
+
+# Zones internes non signees : zone locale + zones croisees (DNSSEC les ignore)
+- name: Compute internal zones to mark domain-insecure
+  ansible.builtin.set_fact:
+    dns_insecure_zones: "{{ ([dns_zone] + (dns_domainoverrides | map(attribute='domain') | list)) | unique }}"
+
+# Le feed RPZ doit exister AVANT le reload Unbound declenche par la config
+- name: Deploy RPZ blocklist
+  ansible.builtin.import_tasks: rpz.yml
+  when: dns_rpz_enabled | bool
+
+- name: Configure pfSense DNS Resolver (Unbound)
+  pfsensible.core.pfsense_dns_resolver:
+    state: present
+    forwarding: "{{ dns_forwarding }}"
+    dnssec: "{{ dns_dnssec }}"
+    hosts: "{{ dns_hosts | map('combine', {'domain': dns_zone}) | list }}"
+    domainoverrides: "{{ dns_domainoverrides }}"
+    custom_options: "{{ lookup('template', 'custom_options.j2') }}"
+
+# Le pfSense interroge l'autre site depuis son IP de tunnel (10.0.0.x) :
+# il faut autoriser ce flux DNS sur l'interface openvpn (sinon croisé bloqué).
+- name: Allow cross-site DNS over the VPN tunnel
+  pfsensible.core.pfsense_rule:
+    name: "Allow DNS over VPN"
+    action: pass
+    interface: openvpn
+    ipprotocol: inet
+    protocol: tcp/udp
+    source: "{{ vpn_tunnel_network }}"
+    destination: "(self)"
+    destination_port: "53"
+    state: present
+  when: dns_crosssite_enabled | bool
+
+# Autorise chaque VLAN interne (LAN, DMZ, ADMIN...) a interroger le resolver.
+# Sans ces regles, les interfaces OPT (DMZ/ADMIN) ne peuvent pas joindre :53.
+- name: Allow internal VLANs to query the DNS resolver
+  pfsensible.core.pfsense_rule:
+    name: "Allow DNS from {{ item }}"
+    action: pass
+    interface: "{{ item }}"
+    ipprotocol: inet
+    protocol: tcp/udp
+    source: any
+    destination: "(self)"
+    destination_port: "53"
+    state: present
+  loop: "{{ dns_client_interfaces }}"

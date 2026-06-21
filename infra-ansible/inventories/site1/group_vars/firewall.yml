@@ -35,3 +35,25 @@ vm_ssh_allowed_ips:
 vpn_tunnel_network: "10.0.0.0/30"
 vpn_site2_lan: "192.168.110.0/24"
 vpn_site2_admin: "192.168.130.0/24"
+
+# ============================================================
+# DNS (Unbound) — zone interne Site 1 + resolution croisee vers Site 2
+# ============================================================
+dns_zone: "site1.lan"
+
+dns_hosts:
+  - { host: "netbox",     ip: "{{ lan_vm_ip }}",   descr: "NetBox IPAM" }
+  - { host: "opensearch", ip: "{{ lan_vm_ip }}",   descr: "OpenSearch" }
+  - { host: "vault",      ip: "{{ admin_vm_ip }}", descr: "Vault / PKI" }
+  - { host: "fw",         ip: "{{ lan_ip }}",      descr: "pfSense Site 1" }
+
+dns_domainoverrides:
+  - { domain: "site2.lan", ip: "192.168.110.1", descr: "Resolution croisee vers Site 2 (via VPN)" }
+
+# VLANs internes autorises a interroger le DNS du pfSense
+dns_client_interfaces:
+  - "LAN"
+  - "ADMIN"
+
+# Kill switch : pas de bastion sur le Site 1 -> recovery via console uniquement
+killswitch_bastion_exception: false

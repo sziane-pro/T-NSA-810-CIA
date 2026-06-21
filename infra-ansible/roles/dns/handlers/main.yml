@@ -1,0 +1,4 @@
+---
+- name: reload unbound
+  ansible.builtin.command: pfSsh.php playback svc restart unbound
+  changed_when: false
