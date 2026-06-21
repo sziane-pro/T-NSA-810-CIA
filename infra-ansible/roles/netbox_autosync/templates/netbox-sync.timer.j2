@@ -1,0 +1,10 @@
+# Managed by Ansible (role netbox_autosync)
+[Unit]
+Description=Schedule NetBox IPAM sync
+
+[Timer]
+OnCalendar={{ netbox_autosync_schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

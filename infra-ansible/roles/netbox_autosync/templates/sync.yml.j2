@@ -1,0 +1,15 @@
+---
+# Genere par Ansible (role netbox_autosync) — joue par le timer systemd.
+# Rejoue le role netbox_sync en local. Le token vient de l'env (NETBOX_TOKEN,
+# charge par systemd depuis netbox.env). Ne pas editer a la main.
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    netbox_url: "{{ netbox_autosync_url }}"
+    netbox_validate_certs: false
+    netbox_token: "{% raw %}{{ lookup('env', 'NETBOX_TOKEN') }}{% endraw %}"
+
+  roles:
+    - netbox_sync

@@ -1,0 +1,11 @@
+---
+# Installe le timer systemd de synchro NetBox sur lan_vm.
+# Le token API est lu depuis Vault au deploiement (tunnel + VAULT_TOKEN requis),
+# puis mis en cache localement : le timer tourne ensuite sans Vault ni tunnel.
+#   make site1-netbox-autosync
+- name: Install NetBox auto-sync timer on lan_vm
+  hosts: lan_vm
+  become: true
+
+  roles:
+    - netbox_autosync

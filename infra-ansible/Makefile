@@ -21,7 +21,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki site1-dns \
         site1-killswitch site1-killswitch-restore site2-killswitch site2-killswitch-restore \
         site1-harden site2-harden \
-        site1-netbox-token netbox-sync site1-fluentbit \
+        site1-netbox-token netbox-sync site1-netbox-autosync site1-fluentbit \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
@@ -44,6 +44,7 @@ help:
 	@echo "  make site1-pki            - Genere la PKI Site 1 uniquement"
 	@echo "  make site1-netbox-token   - Genere le token API NetBox et le stocke dans Vault"
 	@echo "  make netbox-sync           - Synchronise NetBox (IPAM, les 2 sites)"
+	@echo "  make site1-netbox-autosync - Installe le timer systemd de synchro NetBox sur lan_vm"
 	@echo "  make site1-fluentbit       - Installe Fluent Bit sur toutes les VMs Site 1"
 	@echo "  make site1-dns             - Configure le DNS Resolver (Unbound) Site 1"
 	@echo "  make site1-killswitch      - COUPURE D'URGENCE : isole totalement le Site 1"
@@ -194,6 +195,16 @@ netbox-sync:
 	@sleep 1
 	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_sync.yml; \
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
+
+site1-netbox-autosync:
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
+		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
+		-o ExitOnForwardFailure=yes \
+		-o StrictHostKeyChecking=no \
+		$(GATEWAY_USER)@$(GATEWAY_HOST) 2>/dev/null || true
+	@sleep 1
+	ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/netbox_autosync.yml; \
+	pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 # --- Site 2 ---
 
