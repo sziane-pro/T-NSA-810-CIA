@@ -196,4 +196,3 @@ Le projet contient des templates permettant de standardiser sa configuration.
 Le serveur web interne est demandé dans l’architecture du projet.
 
 Le projet contient plusieurs templates permettant de standardiser son déploiement.
-
