@@ -1,0 +1,20 @@
+---
+# Synchronise NetBox (IPAM) — LES 2 SITES — depuis la source de verite
+# declarative (role netbox_sync). Idempotent : rejouable a volonte
+# (operateur ou timer systemd sur lan_vm).
+# Operateur : tunnels 8443 (NetBox) + 8200 (Vault) + VAULT_TOKEN dans l'env.
+#   make netbox-sync
+- name: Sync NetBox IPAM (both sites)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    netbox_url: "https://localhost:8443"
+    netbox_token: "{{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:api_token',
+                      url=lookup('env', 'VAULT_ADDR'),
+                      token=lookup('env', 'VAULT_TOKEN'),
+                      validate_certs=false) }}"
+
+  roles:
+    - netbox_sync
