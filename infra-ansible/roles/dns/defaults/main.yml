@@ -1,0 +1,47 @@
+---
+# ============================================================
+# Valeurs par defaut du role dns (DNS Resolver / Unbound pfSense)
+# Surchargeables par site dans les group_vars (firewall.yml / firewall_s2.yml)
+# ============================================================
+
+# Resolver pur : Unbound resout lui-meme depuis les serveurs racine
+# (pas de forward global vers un DNS upstream)
+dns_forwarding: false
+
+# Validation DNSSEC des reponses publiques
+dns_dnssec: true
+
+# Donnees DNS internes — DEFINIES PAR SITE dans les group_vars :
+#   dns_zone            : zone interne du site (ex: site1.lan)
+#   dns_hosts           : host overrides [{ host, ip, descr }]
+#   dns_domainoverrides : resolution croisee [{ domain, ip, descr }]
+dns_zone: ""
+dns_hosts: []
+dns_domainoverrides: []
+
+# Resolution croisee inter-sites : ouvre le port 53 (tcp/udp) depuis le
+# reseau tunnel VPN vers ce pfSense (interface openvpn). Necessaire car les
+# requetes DNS croisees partent de l'IP de tunnel du pfSense (10.0.0.x),
+# non couverte par les regles VPN LAN/admin existantes.
+dns_crosssite_enabled: true
+
+# Interfaces (VLANs) internes autorisees a interroger le resolver sur :53.
+# DEFINIES PAR SITE dans les group_vars (ex: ["LAN", "ADMIN"]).
+# Sans regle, les interfaces OPT (DMZ/ADMIN) sont en deny par defaut.
+dns_client_interfaces: []
+
+# ------------------------------------------------------------
+# RPZ (Response Policy Zone) — blocage des domaines malveillants
+# Feed deploye par Ansible (Unbound sans libcurl => pas d'auto-fetch)
+# Feed : HaGeZi Threat Intelligence (mini) — malware / phishing / scam / spam
+# (~8.5 Mo, pas d'authentification ; abuse.ch exige desormais une Auth-Key)
+# ------------------------------------------------------------
+dns_rpz_enabled: true
+dns_rpz_name: "hagezi-tif"
+dns_rpz_url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/rpz/tif.mini.txt"
+dns_rpz_path: "/var/unbound/rpz/hagezi-tif.rpz"
+dns_rpz_action: "nxdomain"   # rpz-action-override
+
+# Le RPZ exige le module "respip" (compile dans Unbound mais pas active par
+# defaut sur pfSense). On le prepend a la module-config standard de pfSense.
+dns_module_config: "respip validator iterator"

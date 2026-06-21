@@ -18,12 +18,13 @@ S2_GATEWAY_HOST  ?= 5.39.122.40
 S2_GATEWAY_USER  ?= t-nsa-810-cia
 
 .PHONY: help install \
-        site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki \
+        site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki site1-dns \
+        site1-killswitch site1-killswitch-restore site2-killswitch site2-killswitch-restore \
         site1-netbox-token site1-netbox-populate site1-fluentbit \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-fluentbit site2-all \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-fluentbit site2-dns site2-all \
         site2-check site2-pfsense-check site2-bastion-check site2-webserver-check \
         ping ping-s2
 
@@ -43,6 +44,9 @@ help:
 	@echo "  make site1-netbox-token   - Genere le token API NetBox et le stocke dans Vault"
 	@echo "  make site1-netbox-populate - Peuple NetBox avec l'infrastructure Site 1"
 	@echo "  make site1-fluentbit       - Installe Fluent Bit sur toutes les VMs Site 1"
+	@echo "  make site1-dns             - Configure le DNS Resolver (Unbound) Site 1"
+	@echo "  make site1-killswitch      - COUPURE D'URGENCE : isole totalement le Site 1"
+	@echo "  make site1-killswitch-restore - Retablit le Site 1 (et pre-cree les regles)"
 	@echo ""
 	@echo "  --- Tunnels SSH ---"
 	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
@@ -60,7 +64,10 @@ help:
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo "  make site2-webserver      - Deploie OpenSearch Dashboards sur le WebServer Site 2"
 	@echo "  make site2-fluentbit      - Installe Fluent Bit sur les VMs Site 2 (logs vers OpenSearch Site 1)"
-	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver + fluentbit)"
+	@echo "  make site2-dns            - Configure le DNS Resolver (Unbound) Site 2"
+	@echo "  make site2-killswitch     - COUPURE D'URGENCE : isole totalement le Site 2"
+	@echo "  make site2-killswitch-restore - Retablit le Site 2 (et pre-cree les regles)"
+	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver + fluentbit + dns)"
 	@echo ""
 	@echo "  --- Dry-run Site 2 (simulation) ---"
 	@echo "  make site2-check          - Simule tout le deploiement Site 2"
@@ -120,6 +127,16 @@ site1-lan:
 	@sleep 1
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/lan.yml
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
+
+site1-dns:
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/dns.yml
+
+site1-killswitch:
+	@echo ">>> COUPURE D'URGENCE Site 1 : isolation totale (recovery: console Proxmox/OVH)"
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=true
+
+site1-killswitch-restore:
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=false
 
 site1-vpn:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
@@ -224,12 +241,23 @@ site2-fluentbit:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/fluent-bit_s2.yml
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
+site2-dns:
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/dns.yml
+
+site2-killswitch:
+	@echo ">>> COUPURE D'URGENCE Site 2 : isolation totale (recovery: console + bastion)"
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=true
+
+site2-killswitch-restore:
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=false
+
 site2-all:
-	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → fluentbit)"
+	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → fluentbit → dns)"
 	@$(MAKE) site2-pfsense
 	@$(MAKE) site2-bastion
 	@$(MAKE) site2-webserver
 	@$(MAKE) site2-fluentbit
+	@$(MAKE) site2-dns
 
 site2-check:
 	@$(MAKE) site2-pfsense-check

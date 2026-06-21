@@ -1,0 +1,16 @@
+---
+# ============================================================
+# Kill switch — coupure d'urgence (ADR-009)
+# Regles firewall FLOTTANTES pre-creees, normalement DESACTIVEES.
+# Activation d'urgence : killswitch_enabled=true (disabled -> false).
+# Recovery garanti hors-bande par la console Proxmox/OVH, et (Site 2)
+# par le bastion via l'exception ci-dessous.
+# ============================================================
+
+# false = regles presentes mais inactives (etat normal)
+# true  = isolation totale active
+killswitch_enabled: false
+
+# Garder l'entree SSH du bastion pendant l'isolation (recovery).
+# Defini par site dans les group_vars (true sur le Site 2).
+killswitch_bastion_exception: false

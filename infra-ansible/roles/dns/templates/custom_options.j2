@@ -1,0 +1,30 @@
+{# ============================================================
+   Options Unbound brutes injectees via le champ "Custom options"
+   du DNS Resolver pfSense. Genere :
+   - domain-insecure : zones internes non signees (sinon DNSSEC casse)
+   - local-data-ptr  : reverse DNS (PTR) des hotes internes
+   - rpz             : blocage des domaines malveillants (zonefile local)
+   Ne pas editer a la main cote pfSense : tout est gere par Ansible.
+   ============================================================ #}
+server:
+{% if dns_rpz_enabled %}
+    module-config: "{{ dns_module_config }}"
+{% endif %}
+{% if dns_crosssite_enabled %}
+    access-control: {{ vpn_tunnel_network }} allow
+{% endif %}
+{% for zone in dns_insecure_zones %}
+    domain-insecure: "{{ zone }}"
+{% endfor %}
+{% for h in dns_hosts %}
+    local-data-ptr: "{{ h.ip }} {{ h.host }}.{{ dns_zone }}"
+{% endfor %}
+{% if dns_rpz_enabled %}
+
+rpz:
+    name: "{{ dns_rpz_name }}"
+    zonefile: "{{ dns_rpz_path }}"
+    rpz-action-override: {{ dns_rpz_action }}
+    rpz-log: yes
+    rpz-log-name: "{{ dns_rpz_name }}"
+{% endif %}

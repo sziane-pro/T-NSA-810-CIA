@@ -1,0 +1,25 @@
+---
+# ============================================================
+# Deploiement du feed RPZ sur le pfSense
+# Unbound n'a pas libcurl => il ne peut pas telecharger le feed lui-meme.
+# Ansible recupere donc le fichier de zone et le depose en local ;
+# Unbound le charge via le bloc "rpz: zonefile:" (custom_options).
+# ============================================================
+
+- name: Ensure RPZ directory exists
+  ansible.builtin.file:
+    path: "{{ dns_rpz_path | dirname }}"
+    state: directory
+    owner: unbound
+    group: unbound
+    mode: "0755"
+
+- name: Download RPZ blocklist feed
+  ansible.builtin.get_url:
+    url: "{{ dns_rpz_url }}"
+    dest: "{{ dns_rpz_path }}"
+    owner: unbound
+    group: unbound
+    mode: "0644"
+    force: true
+  notify: reload unbound

@@ -1,0 +1,11 @@
+---
+# Configure le DNS Resolver (Unbound) sur le pfSense du site cible.
+# Le pattern firewall:firewall_s2 ne matche que le groupe present dans
+# l'inventaire passe en -i (Site 1 => firewall, Site 2 => firewall_s2).
+# Executer via : make site1-dns / make site2-dns
+- name: Configure DNS Resolver (Unbound) on pfSense
+  hosts: firewall:firewall_s2
+  gather_facts: false
+
+  roles:
+    - dns
