@@ -1,0 +1,15 @@
+---
+# ============================================================
+# netbox_autosync — installe sur lan_vm un timer systemd qui rejoue
+# periodiquement netbox_sync en LOCAL (NetBox est sur place).
+# Pas de tunnel ni de Vault au runtime : le token API est mis en cache
+# dans un EnvironmentFile root-only, depose depuis Vault au deploiement.
+# ============================================================
+
+netbox_autosync_dir: /opt/netbox-sync
+
+# NetBox tourne en local sur lan_vm
+netbox_autosync_url: "https://localhost"
+
+# Frequence (format systemd OnCalendar) : quotidien a 03:00
+netbox_autosync_schedule: "*-*-* 03:00:00"

@@ -1,0 +1,12 @@
+# Managed by Ansible (role netbox_autosync)
+[Unit]
+Description=NetBox IPAM sync (source of truth -> NetBox)
+After=network-online.target netbox.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile={{ netbox_autosync_dir }}/netbox.env
+Environment=ANSIBLE_COLLECTIONS_PATH={{ netbox_autosync_dir }}/collections
+Environment=ANSIBLE_ROLES_PATH={{ netbox_autosync_dir }}/roles
+ExecStart={{ netbox_autosync_dir }}/venv/bin/ansible-playbook -i localhost, -c local {{ netbox_autosync_dir }}/sync.yml

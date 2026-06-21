@@ -1,0 +1,83 @@
+---
+# ============================================================
+# Deploie sur lan_vm : venv ansible + collection netbox + role netbox_sync
+# + token (depuis Vault) + service/timer systemd qui rejoue la synchro.
+# ============================================================
+
+- name: Ensure base directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - "{{ netbox_autosync_dir }}"
+    - "{{ netbox_autosync_dir }}/roles"
+
+- name: Install venv tooling
+  ansible.builtin.apt:
+    name: [python3-venv, python3-pip]
+    state: present
+    update_cache: true
+
+- name: Create Python virtualenv with ansible-core + pynetbox
+  ansible.builtin.pip:
+    name: [ansible-core, pynetbox]
+    virtualenv: "{{ netbox_autosync_dir }}/venv"
+    virtualenv_command: python3 -m venv
+
+- name: Install netbox.netbox collection in the venv path
+  ansible.builtin.command:
+    cmd: "{{ netbox_autosync_dir }}/venv/bin/ansible-galaxy collection install netbox.netbox -p {{ netbox_autosync_dir }}/collections"
+    creates: "{{ netbox_autosync_dir }}/collections/ansible_collections/netbox/netbox"
+
+- name: Deploy the netbox_sync role onto the host
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../netbox_sync/"
+    dest: "{{ netbox_autosync_dir }}/roles/netbox_sync/"
+    mode: preserve
+
+- name: Deploy the sync playbook
+  ansible.builtin.template:
+    src: sync.yml.j2
+    dest: "{{ netbox_autosync_dir }}/sync.yml"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Cache the NetBox API token from Vault (root-only env file)
+  ansible.builtin.copy:
+    content: "NETBOX_TOKEN={{ lookup('community.hashi_vault.hashi_vault', 'secret/data/netbox:api_token', url=lookup('env', 'VAULT_ADDR'), token=lookup('env', 'VAULT_TOKEN'), validate_certs=false) }}\n"
+    dest: "{{ netbox_autosync_dir }}/netbox.env"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Deploy systemd service
+  ansible.builtin.template:
+    src: netbox-sync.service.j2
+    dest: /etc/systemd/system/netbox-sync.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
+- name: Deploy systemd timer
+  ansible.builtin.template:
+    src: netbox-sync.timer.j2
+    dest: /etc/systemd/system/netbox-sync.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload systemd
+
+- name: Flush handlers (reload systemd before enabling)
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start the timer
+  ansible.builtin.systemd:
+    name: netbox-sync.timer
+    enabled: true
+    state: started
