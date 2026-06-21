@@ -93,7 +93,19 @@ Même si le sujet mentionne Elasticsearch, OpenSearch répond au même objectif 
 
 OpenSearch Dashboards permet également de visualiser les logs et de construire des vues exploitables pour le diagnostic et la supervision.
 
-Ce choix doit être clairement documenté car il s’agit d’un écart par rapport à la stack initialement mentionnée.
+### Raison déterminante : la licence (contrainte du sujet)
+
+Le sujet impose des stacks **« actively supported, maintained and updated by the community »**. Or, en 2021, Elastic a changé la licence d’Elasticsearch et Kibana (passage d’Apache 2.0 à **SSPL/Elastic License**, non-OSI, source-available). **OpenSearch** est le **fork communautaire sous licence Apache 2.0** né de ce changement, soutenu par une fondation et une large communauté.
+
+OpenSearch est donc retenu car il est :
+
+- **réellement open source** (Apache 2.0), sans restriction d’usage liée à la licence ;
+- **maintenu activement par la communauté** → coche directement la contrainte du sujet ;
+- **fonctionnellement équivalent** à Elasticsearch/Kibana pour notre besoin (collecte, indexation, recherche, dashboards, alerting), car issu du même code base.
+
+Le besoin du sujet (« centraliser et analyser les logs via Elasticsearch ») est donc **satisfait sur le fond** : OpenSearch est le successeur open source direct d’Elasticsearch, plus conforme à la contrainte de licence communautaire que l’Elasticsearch actuel.
+
+Ce choix est documenté ici car il s’agit d’un écart de **nom** par rapport à la stack mentionnée — mais pas de **finalité**.
 
 ## Conséquences positives
 
