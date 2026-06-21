@@ -76,3 +76,41 @@
     source: "{{ vpn_site1_admin }}"
     destination: any
     state: present
+
+# ============================================================
+# Kill Switch anti-fuite VPN (automatique, permanent) — miroir du Site 1
+# Empeche toute fuite du trafic vers le Site 1 par le WAN si le tunnel tombe.
+# Regle FLOTTANTE en SORTIE (direction: out) + quick : elle n'intercepte le
+# trafic vers les reseaux du Site 1 que s'il tente d'egress par le WAN, ce qui
+# n'arrive QUE tunnel down (route via openvpn disparue).
+#   Tunnel UP   -> trafic par l'interface openvpn : non bloque.
+#   Tunnel DOWN -> droppe au lieu de fuiter en clair sur internet.
+# ============================================================
+
+- name: Kill Switch - Block leak of Site 1 LAN over WAN
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH Site1 LAN"
+    action: block
+    floating: true
+    direction: out
+    quick: true
+    interface: WAN
+    ipprotocol: inet
+    protocol: any
+    source: any
+    destination: "{{ vpn_site1_lan }}"
+    state: present
+
+- name: Kill Switch - Block leak of Site 1 Admin over WAN
+  pfsensible.core.pfsense_rule:
+    name: "KILL-SWITCH Site1 Admin"
+    action: block
+    floating: true
+    direction: out
+    quick: true
+    interface: WAN
+    ipprotocol: inet
+    protocol: any
+    source: any
+    destination: "{{ vpn_site1_admin }}"
+    state: present
