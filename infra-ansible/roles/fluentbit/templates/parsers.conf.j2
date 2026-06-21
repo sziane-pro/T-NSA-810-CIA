@@ -3,3 +3,20 @@
     Format       regex
     Regex        ^(?<syslog_time>[^ ]+)\s+(?<syslog_host>[^ ]+)\s+(?<process>[^:]+):\s+(?<json_payload>\{.*\})$
     Decode_Field json json_payload
+
+# Structure les lignes syslog classiques (auth.log/syslog) sans payload JSON :
+# extrait l'horodatage, l'hote, le process et le message -> champ "message"
+# requetable (SSH brute-force, sudo, fail2ban...).
+[PARSER]
+    Name         syslog_plain
+    Format       regex
+    Regex        ^(?<syslog_time>[A-Z][a-z]{2}\s+\d+\s\d{2}:\d{2}:\d{2})\s+(?<syslog_host>[^ ]+)\s+(?<process>[^:\[]+)(?:\[(?<pid>\d+)\])?:\s+(?<message>.*)$
+
+# Logs d'acces Nginx (format JSON defini dans nginx.conf) :
+# status, method, uri, remote_addr, request_time, user_agent...
+[PARSER]
+    Name         nginx_json
+    Format       json
+    Time_Key     time
+    Time_Format  %Y-%m-%dT%H:%M:%S%z
+    Time_Keep    On
