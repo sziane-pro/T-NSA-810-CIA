@@ -109,7 +109,7 @@ site1-pfsense-nat:
 
 site1-pfsense-vpn:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -123,7 +123,7 @@ site1-vault:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vault.yml
 
 site1-lan:
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -147,7 +147,7 @@ site1-harden:
 
 site1-vpn:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -162,7 +162,7 @@ site1-pki:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/vpn.yml --tags pki
 
 site1-netbox-token:
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
 		-o ExitOnForwardFailure=yes \
@@ -174,7 +174,7 @@ site1-netbox-token:
 	pkill -f "8443:$(NETBOX_INTERNAL_HOST):443" 2>/dev/null || true
 
 site1-fluentbit:
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -185,7 +185,7 @@ site1-fluentbit:
 	@pkill -f "8200:$(VAULT_INTERNAL_HOST):8200" 2>/dev/null || true
 
 netbox-sync:
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
 		-o ExitOnForwardFailure=yes \
@@ -208,7 +208,7 @@ site2-pfsense-nat:
 
 site2-vpn:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -222,7 +222,7 @@ site2-vpn:
 
 site2-vpn-client:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -242,7 +242,7 @@ site2-website:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/website_s2.yml
 
 site2-fluentbit:
-	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	@ssh -f -N -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o ExitOnForwardFailure=yes \
 		-o StrictHostKeyChecking=no \
@@ -291,21 +291,21 @@ site2-webserver-check:
 
 tunnel-netbox:
 	@echo "Tunnel NetBox : https://localhost:8443 -> $(NETBOX_INTERNAL_HOST):443  (Ctrl+C pour fermer)"
-	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
 		-o StrictHostKeyChecking=no \
 		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
 
 tunnel-vault:
 	@echo "Tunnel Vault : https://localhost:8200 -> $(VAULT_INTERNAL_HOST):8200  (Ctrl+C pour fermer)"
-	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-o StrictHostKeyChecking=no \
 		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
 
 tunnel-opensearch:
 	@echo "Tunnel OpenSearch : https://localhost:9200 -> $(NETBOX_INTERNAL_HOST):9200  (Ctrl+C pour fermer)"
-	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 9200:$(NETBOX_INTERNAL_HOST):9200 \
 		-o StrictHostKeyChecking=no \
 		-N $(GATEWAY_USER)@$(GATEWAY_HOST)
@@ -316,7 +316,7 @@ tunnel-all:
 	@echo "  https://localhost:8200  -> Vault      ($(VAULT_INTERNAL_HOST):8200)"
 	@echo "  https://localhost:9200  -> OpenSearch ($(NETBOX_INTERNAL_HOST):9200)"
 	@echo "Ctrl+C pour tout fermer."
-	ssh -p $(GATEWAY_PORT) -i $(SSH_KEY) \
+	ssh -p $(ADMIN_VM_PORT) -i $(SSH_KEY) \
 		-L 8443:$(NETBOX_INTERNAL_HOST):443 \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
 		-L 9200:$(NETBOX_INTERNAL_HOST):9200 \
