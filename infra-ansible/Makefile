@@ -24,7 +24,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
         ssh-pfsense-s2 ssh-bastion ssh-webserver \
-        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-fluentbit site2-dns site2-all \
+        site2-pfsense site2-pfsense-rules site2-pfsense-nat site2-vpn site2-vpn-client site2-bastion site2-webserver site2-website site2-fluentbit site2-dns site2-all \
         site2-check site2-pfsense-check site2-bastion-check site2-webserver-check \
         ping ping-s2
 
@@ -63,6 +63,7 @@ help:
 	@echo "  make site2-vpn-client    - Configure le client VPN Site 2 uniquement (ne touche pas au Site 1)"
 	@echo "  make site2-bastion        - Configure le Bastion Host Site 2 (SSH hardening + fail2ban + logging)"
 	@echo "  make site2-webserver      - Deploie OpenSearch Dashboards sur le WebServer Site 2"
+	@echo "  make site2-website        - Deploie le site web interne (Nginx) sur le WebServer Site 2"
 	@echo "  make site2-fluentbit      - Installe Fluent Bit sur les VMs Site 2 (logs vers OpenSearch Site 1)"
 	@echo "  make site2-dns            - Configure le DNS Resolver (Unbound) Site 2"
 	@echo "  make site2-killswitch     - COUPURE D'URGENCE : isole totalement le Site 2"
@@ -231,6 +232,9 @@ site2-bastion:
 site2-webserver:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/webserver_s2.yml
 
+site2-website:
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/website_s2.yml
+
 site2-fluentbit:
 	@ssh -f -N -p $(GATEWAY_PORT) -i $(SSH_KEY) \
 		-L 8200:$(VAULT_INTERNAL_HOST):8200 \
@@ -252,10 +256,11 @@ site2-killswitch-restore:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=false
 
 site2-all:
-	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → fluentbit → dns)"
+	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → website → fluentbit → dns)"
 	@$(MAKE) site2-pfsense
 	@$(MAKE) site2-bastion
 	@$(MAKE) site2-webserver
+	@$(MAKE) site2-website
 	@$(MAKE) site2-fluentbit
 	@$(MAKE) site2-dns
 

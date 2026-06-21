@@ -1,0 +1,17 @@
+---
+# Deploie le site web interne (Nginx) sur le WebServer Site 2.
+# Interne uniquement : aucun port-forward HTTP vers le WAN (cf. nat.yml),
+# donc le site n'est joignable que depuis le reseau interne / via le VPN.
+# Les logs Nginx (JSON) sont collectes par Fluent Bit (make site2-fluentbit).
+# On n'execute que la partie nginx du role webserver (le Site 2 logue via
+# Fluent Bit, pas Filebeat).
+# Executer via : make site2-website
+- name: Deploy internal website (Nginx) on WebServer Site 2
+  hosts: webserver_vm
+  become: true
+
+  tasks:
+    - name: Configure internal Nginx website
+      ansible.builtin.import_role:
+        name: webserver
+        tasks_from: nginx
