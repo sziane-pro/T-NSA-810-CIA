@@ -1,0 +1,13 @@
+---
+# Durcissement SSH (key-only) des VMs applicatives.
+# Ne cible JAMAIS le bastion (role dedie) ni le pfSense (pas un Linux std).
+# PREREQUIS : l'acces par cle doit deja fonctionner sur la VM (sinon lockout ;
+# recovery via console Proxmox). Lancer via :
+#   make site2-harden   (limite a webserver_vm)
+#   make site1-harden   (limite a lan_vm:admin_vm)
+- name: SSH hardening (key-only) on application VMs
+  hosts: webserver_vm:lan_vm:admin_vm
+  become: true
+
+  roles:
+    - ssh_hardening

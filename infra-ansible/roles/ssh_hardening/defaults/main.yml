@@ -1,0 +1,17 @@
+---
+# ============================================================
+# ssh_hardening — durcissement SSH generique (key-only)
+# A appliquer sur les VMs Linux SAUF le bastion (qui a son propre
+# role avec AllowTcpForwarding yes) et SAUF le pfSense.
+# ============================================================
+
+ssh_port: 22
+
+# Utilisateurs autorises a se connecter (par defaut : le compte ansible)
+ssh_allowed_users: "{{ ansible_user }}"
+
+# Les serveurs applicatifs n'ont pas besoin du port forwarding
+ssh_allow_tcp_forwarding: "no"
+
+# Laisser vide pour ecouter sur toutes les interfaces
+ssh_listen_address: ""

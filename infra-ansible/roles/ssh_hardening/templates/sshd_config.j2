@@ -1,0 +1,36 @@
+# Managed by Ansible — do not edit manually
+Port {{ ssh_port }}
+AddressFamily inet
+{% if ssh_listen_address | length > 0 %}
+ListenAddress {{ ssh_listen_address }}
+{% endif %}
+
+# Authentication — key-only
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+ChallengeResponseAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+AllowUsers {{ ssh_allowed_users }}
+
+# Hardening
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding {{ ssh_allow_tcp_forwarding }}
+PrintMotd no
+AcceptEnv LANG LC_*
+
+# Logging
+LogLevel VERBOSE
+SyslogFacility AUTH
+
+# Timeouts
+LoginGraceTime 30
+MaxAuthTries 3
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# Subsystems
+Subsystem sftp /usr/lib/openssh/sftp-server

@@ -20,6 +20,7 @@ S2_GATEWAY_USER  ?= t-nsa-810-cia
 .PHONY: help install \
         site1-pfsense site1-pfsense-rules site1-pfsense-vpn site1-vault site1-lan site1-vpn site1-pki site1-dns \
         site1-killswitch site1-killswitch-restore site2-killswitch site2-killswitch-restore \
+        site1-harden site2-harden \
         site1-netbox-token site1-netbox-populate site1-fluentbit \
         tunnel-netbox tunnel-vault tunnel-opensearch tunnel-all \
         ssh-pfsense ssh-lan ssh-admin \
@@ -47,6 +48,7 @@ help:
 	@echo "  make site1-dns             - Configure le DNS Resolver (Unbound) Site 1"
 	@echo "  make site1-killswitch      - COUPURE D'URGENCE : isole totalement le Site 1"
 	@echo "  make site1-killswitch-restore - Retablit le Site 1 (et pre-cree les regles)"
+	@echo "  make site1-harden          - Durcit SSH key-only sur lan_vm/admin_vm Site 1"
 	@echo ""
 	@echo "  --- Tunnels SSH ---"
 	@echo "  make tunnel-netbox       - Tunnel vers NetBox     (localhost:8443)"
@@ -68,6 +70,7 @@ help:
 	@echo "  make site2-dns            - Configure le DNS Resolver (Unbound) Site 2"
 	@echo "  make site2-killswitch     - COUPURE D'URGENCE : isole totalement le Site 2"
 	@echo "  make site2-killswitch-restore - Retablit le Site 2 (et pre-cree les regles)"
+	@echo "  make site2-harden         - Durcit SSH key-only sur le WebServer Site 2"
 	@echo "  make site2-all            - Deploie tout le Site 2 (pfsense + bastion + webserver + fluentbit + dns)"
 	@echo ""
 	@echo "  --- Dry-run Site 2 (simulation) ---"
@@ -138,6 +141,9 @@ site1-killswitch:
 
 site1-killswitch-restore:
 	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=false
+
+site1-harden:
+	@ansible-playbook -i $(SITE1_INVENTORY) $(PLAYBOOKS_DIR)/ssh_hardening.yml --limit lan_vm:admin_vm
 
 site1-vpn:
 	@rm -f ~/.ansible/cp/* 2>/dev/null || true
@@ -254,6 +260,9 @@ site2-killswitch:
 
 site2-killswitch-restore:
 	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/killswitch.yml -e killswitch_enabled=false
+
+site2-harden:
+	@ansible-playbook -i $(SITE2_INVENTORY) $(PLAYBOOKS_DIR)/ssh_hardening.yml --limit webserver_vm
 
 site2-all:
 	@echo ">>> Deploiement complet Site 2 (pfsense → bastion → webserver → website → fluentbit → dns)"
