@@ -3,7 +3,7 @@
   ansible.builtin.shell: vault operator init -status
   environment:
     VAULT_ADDR: "https://{{ vault_listen_address }}:8200"
-    VAULT_SKIP_VERIFY: "true"
+    VAULT_CACERT: "/opt/vault/tls/vault.crt"
   register: vault_init_status
   failed_when: vault_init_status.rc == 1
 
@@ -16,7 +16,7 @@
     -format=json
   environment:
     VAULT_ADDR: "https://{{ vault_listen_address }}:8200"
-    VAULT_SKIP_VERIFY: "true"
+    VAULT_CACERT: "/opt/vault/tls/vault.crt"
   register: vault_init_output
   when: vault_init_status.rc == 2
 
@@ -37,7 +37,7 @@
     {{ (vault_init_output.stdout | from_json).unseal_keys_b64[0] }}
   environment:
     VAULT_ADDR: "https://{{ vault_listen_address }}:8200"
-    VAULT_SKIP_VERIFY: "true"
+    VAULT_CACERT: "/opt/vault/tls/vault.crt"
   when: vault_init_status.rc == 2
 
 # Active le moteur KV
@@ -45,7 +45,7 @@
   ansible.builtin.shell: vault secrets enable -path=secret kv-v2
   environment:
     VAULT_ADDR: "https://{{ vault_listen_address }}:8200"
-    VAULT_SKIP_VERIFY: "true"
+    VAULT_CACERT: "/opt/vault/tls/vault.crt"
     VAULT_TOKEN: "{{ (vault_init_output.stdout | from_json).root_token }}"
   when: vault_init_status.rc == 2
   failed_when: false
