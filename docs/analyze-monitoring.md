@@ -159,6 +159,64 @@ Ces requêtes facilitent l’analyse des incidents et permettent de réduire le 
 
 ---
 
+## 8.1 Champs réels du pipeline & détections de sécurité
+
+> Référence faisant foi. Les exemples des sections précédentes décrivent un
+> schéma applicatif générique ; voici les **champs réellement indexés** par le
+> pipeline déployé (`roles/fluentbit`) et des **détections orientées sécurité**.
+
+### Champs réellement disponibles (index `fluent-bit`)
+
+**Logs système / sécurité** (`/var/log/auth.log`, `/var/log/syslog`, tag `system`) :
+
+| Champ | Description |
+| --- | --- |
+| `@timestamp` | Date/heure |
+| `source_host` | VM émettrice (`bastion_vm`, `webserver_vm`, `lan_vm`, `admin_vm`) |
+| `process` | Démon émetteur (`sshd`, `sudo`, `fail2ban`…) |
+| `message` | Message structuré (parser `syslog_plain`) |
+| `log` | Ligne brute (toujours présente, fallback) |
+
+**Logs d'accès Nginx** (`/var/log/nginx/access.log`, tag `nginx`, webserver_vm) :
+
+| Champ | Description |
+| --- | --- |
+| `remote_addr` | IP cliente |
+| `method` · `uri` | Méthode + route HTTP |
+| `status` | Code HTTP (numérique) |
+| `request_time` · `body_bytes` | Latence / taille réponse |
+| `user_agent` · `referer` | Métadonnées client |
+
+### Détections de sécurité (requêtes DQL — Discover)
+
+| Objectif | Requête |
+| --- | --- |
+| **Brute-force SSH** | `process: sshd and message: "Failed password"` |
+| Utilisateurs inexistants ciblés | `process: sshd and message: "Invalid user"` |
+| Connexions SSH **réussies** (audit) | `process: sshd and message: "Accepted"` |
+| Élévation de privilèges | `process: sudo` |
+| **Bannissements fail2ban** | `process: fail2ban* and message: "Ban"` |
+| Cibler une VM | `source_host: bastion_vm` |
+| Erreurs/scan web | `status >= 400` |
+| Scan de chemins (404 en masse) | `status: 404` puis agrégation sur `remote_addr` |
+
+### Agrégations utiles (Visualize)
+- **Top IP** sur `remote_addr` filtré `status >= 400` → scan/abus web.
+- **Courbe `Failed password`** par `source_host` dans le temps → pic = attaque SSH.
+- **Comptage `process: fail2ban*`** → efficacité du bannissement.
+
+### Détection type : brute-force SSH
+1. Discover : `process: sshd and message: "Failed password"`.
+2. Agréger par `source_host` et par IP source (dans `message`).
+3. Corréler avec `process: fail2ban* and message: "Ban"` → confirmer que l'IP a bien été bannie.
+4. Si non bannie (IP dans l'allowlist) → décision : retirer de l'allowlist ou bloquer au pfSense.
+
+### Limite connue (et piste d'amélioration)
+Les logs **pfSense** (firewall/VPN) ne sont **pas encore centralisés** dans OpenSearch
+(Fluent Bit tourne sur les VMs Linux, pas sur pfSense). Pour les inclure : configurer
+le **Remote Syslog** de pfSense vers un input syslog Fluent Bit/OpenSearch. Documenté
+comme évolution.
+
 ## 9. Dashboards
 
 Des dashboards sont créés dans OpenSearch Dashboards afin d’avoir une vision claire de l’état du trafic et de la santé des services.
