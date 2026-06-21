@@ -1,76 +1,87 @@
-# Légende de l'Architecture Réseau Hybride Proxmox
+# Légende de l'architecture réseau hybride Proxmox
 
-## Sites et Infrastructure
-- **SITE 1 (On-Premise)** : Datacenter principal avec services centralisés
-- **SITE 2 (Remote)** : Site distant avec bastion pour accès externe
-- **Chaque site** : Maximum 3 VMs sur Proxmox VE
+> Synthèse de l'infrastructure réellement déployée. Détail complet :
+> [architecture-documentation.md](architecture-documentation.md).
 
-## Segmentation Réseau
+## Sites et infrastructure
+
+- **SITE 1 (cœur, on-premise)** : services centralisés (Vault, NetBox, OpenSearch), hub VPN.
+- **SITE 2 (distant, remote)** : bastion d'accès, OpenSearch Dashboards, site web interne.
+- **Chaque site** : maximum 3 VMs sur Proxmox VE.
+
+## Segmentation réseau
 
 ### Site 1
-| Segment | Plage | Usage |
-|---------|-------|-------|
-| LAN | `192.168.10.0/24` | Utilisateurs |
-| DMZ | `192.168.20.0/24` | Services exposés |
-| ADMIN | `192.168.30.0/24` | Management |
+| Segment | VLAN | Plage | Usage |
+|---|---|---|---|
+| LAN | 10 | `192.168.10.0/24` | Services internes (lan_vm) |
+| ADMIN | 30 | `192.168.30.0/24` | Management (admin_vm) |
 
 ### Site 2
-| Segment | Plage | Usage |
-|---------|-------|-------|
-| LAN | `192.168.110.0/24` | Utilisateurs |
-| DMZ | `192.168.120.0/24` | Bastion + Services |
-| ADMIN | `192.168.130.0/24` | Management |
+| Segment | VLAN | Plage | Usage |
+|---|---|---|---|
+| LAN | 110 | `192.168.110.0/24` | Serveur web interne |
+| DMZ | 120 | `192.168.120.0/24` | Bastion (accès externe) |
+| ADMIN | 130 | `192.168.130.0/24` | Management |
 
-## VPN Site-à-Site
-- **Tunnel OpenVPN** : `10.0.0.0/30`
+## VPN site-à-site
+
+- **Tunnel OpenVPN** : `10.0.0.0/30` (S1 `10.0.0.1` = serveur, S2 `10.0.0.2` = client)
+- **Transport** : UDP `1194`
 - **Chiffrement** : AES-256-GCM
-- **Authentification** : RSA-4096 + Certificats
-- **Routage** : Automatique entre tous les segments
+- **Authentification** : PKI X.509 (CA + certificats), gérée dans Vault
+- **Routage** : annonce automatique des réseaux internes entre les sites
 
 ## Sécurité
-- Pare-feu **pfSense** sur chaque site
-- Règles de filtrage strictes (Least Privilege)
-- **Kill Switch** d'urgence sur les deux sites
-- **Bastion Host** avec 2FA pour accès externe
-- Logging centralisé de toutes les connexions
 
-## Services Centralisés
+- Pare-feu **pfSense** sur chaque site, filtrage least privilege (versionné en IaC)
+- NAT/accès restreints à des **IP sources whitelistées**
+- **Bastion** SSH durci (key-only, fail2ban) pour l'accès externe
+- **DNS** Unbound : resolver pur + DNSSEC + RPZ (anti-malware) + résolution croisée
+- **Kill switch** : anti-fuite VPN (automatique) + isolation totale (à la demande)
+- Aucun service exposé directement sur Internet (accès via tunnels SSH)
+
+## Services centralisés
+
 | Service | Outil | Localisation | Rôle |
-|---------|-------|--------------|------|
-| IPAM | NetBox | Site 1 | Source de vérité unique |
-| Monitoring | Elasticsearch | Site 1 | Logs multi-sites |
-| DNS | pfSense | Hiérarchie | Résolution croisée |
-| VPN Hub | OpenVPN | Site 1 | Point central |
+|---|---|---|---|
+| Secrets / PKI | HashiCorp Vault | Site 1 (admin_vm) | Source des secrets |
+| IPAM | NetBox | Site 1 (lan_vm) | Source de vérité réseau |
+| Observabilité | OpenSearch + Dashboards | Site 1 (collecte) / Site 2 (dashboards) | Logs multi-sites |
+| DNS | Unbound (pfSense) | Chaque site | Résolution + croisée |
+| VPN hub | OpenVPN | Site 1 | Point central |
 
 ## Automatisation
-- **API NetBox** pour gestion IP automatisée
-- Synchronisation temps réel des configurations
-- Templates **IaC** pour déploiement reproductible
-- **Webhooks** pour mises à jour automatiques
 
-## Monitoring
-- Collecte logs centralisée (**Elasticsearch**)
-- Dashboards **Kibana** pour visualisation
-- Métriques système et réseau (**Beats**)
-- Alerting automatique sur anomalies
+- Tout en **Infrastructure as Code** (Ansible) — reproductible depuis Git + Vault
+- **NetBox** peuplé par le code + **synchro automatique** (timer systemd)
+- Collecte de logs via **Fluent Bit** (les deux sites)
 
-## Procédures d'Urgence
+## Observabilité
+
+- Logs centralisés dans **OpenSearch**, visualisés via **OpenSearch Dashboards**
+- Sources : firewall, SSH/sudo, fail2ban (`auth.log`), accès **Nginx** (JSON)
+- Champ `source_host` ajouté à chaque événement
+
+## Procédures d'urgence
+
 | Procédure | Description |
-|-----------|-------------|
-| Kill Switch | Coupure VPN immédiate |
-| Isolation sites | Maintien accès bastion |
-| Recovery | Scripts automatisés de reconnexion |
-| Runbooks | Procédures détaillées de récupération |
+|---|---|
+| Anti-fuite VPN | Automatique : bloque la fuite inter-sites si le tunnel tombe |
+| Kill switch | À la demande : isolation totale du site (WAN + VPN) |
+| Reprise | Hors-bande : console Proxmox (S1 & S2) + bastion (S2) |
+| Runbooks | Procédures détaillées : [disaster-recovery-plan.md](docs/disaster-recovery-plan.md) |
 
 ## Évolutivité
-- Convention d'adressage extensible
-- Templates réutilisables pour nouveaux sites
-- Architecture **Hub-and-spoke** scalable
-- Documentation automatisée de la topologie
 
-## Flux Principaux
-1. **Utilisateur externe** → Bastion Host (SSH)
-2. **Site 1** ↔ **Site 2** (VPN chiffré)
-3. **Tous les logs** → Elasticsearch (Site 1)
-4. **Gestion IP** → NetBox API (Site 1)
-5. **DNS** : Résolution croisée entre sites
+- Convention d'adressage extensible (nouveau site = triplet VLAN + tunnel `10.0.0.x/30`)
+- Rôles Ansible paramétrés par site, description IPAM data-driven
+- Architecture hub-and-spoke scalable
+
+## Flux principaux
+
+1. **Admin externe** → Bastion (SSH, IP whitelistées) → réseau interne
+2. **Site 1 ↔ Site 2** via VPN chiffré
+3. **Tous les logs** → OpenSearch (Site 1)
+4. **Gestion IP** → NetBox (Site 1)
+5. **DNS** : résolution croisée `site1.lan ↔ site2.lan` via le VPN
