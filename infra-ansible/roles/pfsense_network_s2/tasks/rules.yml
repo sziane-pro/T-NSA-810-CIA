@@ -76,31 +76,10 @@
 
 # ============================================================
 # Règles WAN — Accès SSH vers VMs internes (via NAT)
+# Les regles de filtrage sont creees automatiquement par les
+# port-forward de nat.yml (filtre associe "NAT NAT SSH ...").
+# Ne pas les recreer ici sous peine de doublons WAN.
 # ============================================================
-
-- name: Allow NAT SSH to Bastion
-  pfsensible.core.pfsense_rule:
-    name: "NAT SSH Bastion"
-    action: pass
-    interface: WAN
-    ipprotocol: inet
-    protocol: tcp
-    source: ssh_admin_allowed
-    destination: "{{ bastion_ip }}"
-    destination_port: "22"
-    state: present
-
-- name: Allow NAT SSH to WebServer
-  pfsensible.core.pfsense_rule:
-    name: "NAT SSH WebServer"
-    action: pass
-    interface: WAN
-    ipprotocol: inet
-    protocol: tcp
-    source: ssh_admin_allowed
-    destination: "{{ webserver_ip }}"
-    destination_port: "22"
-    state: present
 
 # ============================================================
 # Règles WAN — VPN OpenVPN client vers Site 1
