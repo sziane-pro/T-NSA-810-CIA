@@ -7,6 +7,8 @@
   gather_facts: false
 
   vars:
+    # Forcer l'interpreteur du venv (sinon le module netbox ne trouve pas pynetbox)
+    ansible_python_interpreter: "{{ netbox_autosync_dir }}/venv/bin/python3"
     netbox_url: "{{ netbox_autosync_url }}"
     netbox_validate_certs: false
     netbox_token: "{% raw %}{{ lookup('env', 'NETBOX_TOKEN') }}{% endraw %}"
